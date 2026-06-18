@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { AASClient } from '../client'
+import type { Item } from '@aas/types'
 
 describe('AASClient constructor', () => {
   test('uses provided baseUrl', () => {
@@ -15,5 +16,128 @@ describe('AASClient constructor', () => {
   test('strips trailing slash from baseUrl', () => {
     const client = new AASClient('https://market.example.com/')
     expect(client.baseUrl).toBe('https://market.example.com')
+  })
+})
+
+// Minimal valid Item fixture for mocking
+const fakeItem: Item = {
+  id: 'item-1',
+  slug: 'test-provider',
+  name: 'Test Provider',
+  description: 'A test provider',
+  readmeUrl: 'https://example.com/readme',
+  icon: 'https://example.com/icon.png',
+  category: 'provider',
+  version: '1.0.0',
+  publisher: {
+    id: 'pub-1',
+    slug: 'test-publisher',
+    name: 'Test Publisher',
+    avatarUrl: 'https://example.com/avatar.png',
+    tier: 'official',
+  },
+  compatibleWith: ['claude'],
+  tags: ['ai'],
+  downloads: 100,
+  rating: 0,
+  status: 'published',
+  installHook: { steps: [] },
+  createdAt: '2026-06-18T00:00:00Z',
+  updatedAt: '2026-06-18T00:00:00Z',
+  configSchema: {},
+  supportedModels: ['gpt-4o'],
+}
+
+describe('AASClient.getItems', () => {
+  test('calls GET /api/items and returns items on success', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async (url: RequestInfo | URL) => {
+      expect(String(url)).toBe('http://localhost:3000/api/items')
+      return new Response(JSON.stringify({ items: [fakeItem] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    const client = new AASClient()
+    const result = await client.getItems()
+    expect(result.error).toBeNull()
+    expect(result.data).toHaveLength(1)
+    expect(result.data![0].slug).toBe('test-provider')
+
+    globalThis.fetch = originalFetch
+  })
+
+  test('appends query params when provided', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async (url: RequestInfo | URL) => {
+      const u = new URL(String(url))
+      expect(u.searchParams.get('category')).toBe('provider')
+      expect(u.searchParams.get('q')).toBe('gpt')
+      expect(u.searchParams.get('limit')).toBe('5')
+      expect(u.searchParams.get('offset')).toBe('10')
+      expect(u.searchParams.get('sort')).toBe('created')
+      return new Response(JSON.stringify({ items: [] }), { status: 200 })
+    }
+
+    const client = new AASClient()
+    await client.getItems({ category: 'provider', q: 'gpt', limit: 5, offset: 10, sort: 'created' })
+
+    globalThis.fetch = originalFetch
+  })
+
+  test('returns error string on non-200 response', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ error: 'Failed to fetch items' }), { status: 500 })
+
+    const client = new AASClient()
+    const result = await client.getItems()
+    expect(result.data).toBeNull()
+    expect(result.error).toBe('Failed to fetch items')
+
+    globalThis.fetch = originalFetch
+  })
+
+  test('returns error string on network failure', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async () => { throw new Error('Network error') }
+
+    const client = new AASClient()
+    const result = await client.getItems()
+    expect(result.data).toBeNull()
+    expect(result.error).toBe('Network error')
+
+    globalThis.fetch = originalFetch
+  })
+})
+
+describe('AASClient.getItemBySlug', () => {
+  test('calls GET /api/items/:slug and returns item on success', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async (url: RequestInfo | URL) => {
+      expect(String(url)).toBe('http://localhost:3000/api/items/test-provider')
+      return new Response(JSON.stringify({ item: fakeItem }), { status: 200 })
+    }
+
+    const client = new AASClient()
+    const result = await client.getItemBySlug('test-provider')
+    expect(result.error).toBeNull()
+    expect(result.data?.slug).toBe('test-provider')
+
+    globalThis.fetch = originalFetch
+  })
+
+  test('returns error string on 404', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ error: 'Not found' }), { status: 404 })
+
+    const client = new AASClient()
+    const result = await client.getItemBySlug('no-such-slug')
+    expect(result.data).toBeNull()
+    expect(result.error).toBe('Not found')
+
+    globalThis.fetch = originalFetch
   })
 })
