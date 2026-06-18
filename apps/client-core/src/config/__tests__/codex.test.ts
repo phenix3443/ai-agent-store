@@ -82,6 +82,20 @@ test('skill add copies skill.md to codexDir/skills/', async () => {
   expect(content).toBe('# Skill')
 })
 
+test('mcp remove works even when item directory does not exist', async () => {
+  // First add the entry, then simulate the directory being deleted already
+  await setupItem('mcp', 'test-mcp', mcpManifest)
+  await syncItemToCodex('test-mcp', 'mcp', aasHome, codexDir, 'add')
+  // Remove the item directory to simulate post-uninstall state
+  await rm(join(aasHome, 'mcps', 'test-mcp'), { recursive: true, force: true })
+  // Remove should succeed without ENOENT
+  await expect(
+    syncItemToCodex('test-mcp', 'mcp', aasHome, codexDir, 'remove')
+  ).resolves.toBeUndefined()
+  const config = await readConfig(codexDir)
+  expect((config.mcpServers as Record<string, unknown>)?.['test-mcp']).toBeUndefined()
+})
+
 test('mcp add preserves existing config.yaml keys', async () => {
   await writeFile(join(codexDir, 'config.yaml'), yaml.dump({ model: 'codex-mini' }))
   await setupItem('mcp', 'test-mcp', mcpManifest)

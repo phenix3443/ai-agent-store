@@ -106,6 +106,20 @@ test('skill remove does not throw if file absent', async () => {
   ).resolves.toBeUndefined()
 })
 
+test('mcp remove works even when item directory does not exist', async () => {
+  // First add the entry, then simulate the directory being deleted already
+  await setupItem('mcp', 'test-mcp', mcpManifest)
+  await syncItemToClaude('test-mcp', 'mcp', aasHome, claudeDir, 'add')
+  // Remove the item directory to simulate post-uninstall state
+  await rm(join(aasHome, 'mcps', 'test-mcp'), { recursive: true, force: true })
+  // Remove should succeed without ENOENT
+  await expect(
+    syncItemToClaude('test-mcp', 'mcp', aasHome, claudeDir, 'remove')
+  ).resolves.toBeUndefined()
+  const settings = JSON.parse(await readFile(join(claudeDir, 'settings.json'), 'utf-8'))
+  expect(settings.mcpServers?.['test-mcp']).toBeUndefined()
+})
+
 test('mcp add preserves existing settings keys', async () => {
   await writeFile(join(claudeDir, 'settings.json'), JSON.stringify({ model: 'claude-sonnet-4-6' }))
   await setupItem('mcp', 'test-mcp', mcpManifest)

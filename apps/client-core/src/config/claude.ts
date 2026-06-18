@@ -39,9 +39,9 @@ export async function syncItemToClaude(
   const settings = await readSettings(claudeConfigDir)
 
   if (category === 'mcp') {
-    const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf-8')) as MCPItem
     const mcpServers = (settings['mcpServers'] ?? {}) as Record<string, unknown>
     if (action === 'add') {
+      const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf-8')) as MCPItem
       const { command, args } = resolveServerCmd(manifest.serverCommand, dir)
       mcpServers[slug] = { command, args }
     } else {
