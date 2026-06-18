@@ -13,7 +13,6 @@ export async function runInstall(
   }
 
   try {
-    out(formatStep(`Fetching ${slug}...`))
     const result = await engine.install(slug)
     out(formatStep(`Fetching ${slug}@${result.version}...`, 'done'))
     out(formatStep('Running install hooks...', 'done'))
