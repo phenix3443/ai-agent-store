@@ -1,0 +1,20 @@
+{
+  "name": "@aas/cli",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "build:bin": "bun build ./src/index.ts --compile --outfile ../../bin/aas",
+    "type-check": "tsc --noEmit",
+    "test": "bun test",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@aas/client-core": "workspace:*",
+    "@aas/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.4.0"
+  }
+}
