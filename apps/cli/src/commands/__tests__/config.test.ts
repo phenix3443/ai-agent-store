@@ -14,7 +14,7 @@ const schema: JsonSchema = {
 function makeEngine(setConfigSpy?: (slug: string, values: Record<string, unknown>) => void): AASEngine {
   return {
     getConfigSchema: async () => ({ schema, current: {} }),
-    setConfig: async (slug, values) => { setConfigSpy?.(slug, values) },
+    setConfig: async (slug: string, values: Record<string, unknown>) => { setConfigSpy?.(slug, values) },
   } as unknown as AASEngine
 }
 

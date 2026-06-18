@@ -3,7 +3,10 @@ import { runEnable } from '../enable'
 import { runDisable } from '../disable'
 import type { AASEngine } from '@aas/types'
 
-function makeEngine(enableFn = async () => {}, disableFn = async () => {}): AASEngine {
+function makeEngine(
+  enableFn: (slug: string, target: string) => Promise<void> = async () => {},
+  disableFn: (slug: string, target: string) => Promise<void> = async () => {}
+): AASEngine {
   return { enable: enableFn, disable: disableFn } as unknown as AASEngine
 }
 
