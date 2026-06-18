@@ -73,7 +73,7 @@ function makeSlugMock(data: unknown, error: unknown = null) {
 }
 
 test('getItemBySlug returns single mapped item', async () => {
-  mockSupabase = makeSlugMock(mockDBItem) as typeof mockSupabase
+  mockSupabase = makeSlugMock(mockDBItem) as unknown as typeof mockSupabase
   const { data, error } = await getItemBySlug('openai-provider')
   expect(error).toBeNull()
   expect(data?.slug).toBe('openai-provider')
@@ -81,7 +81,7 @@ test('getItemBySlug returns single mapped item', async () => {
 
 test('getItemBySlug returns null when not found', async () => {
   // PGRST116 is the "row not found" code from Supabase .single()
-  mockSupabase = makeSlugMock(null, { code: 'PGRST116', message: 'Not found' }) as typeof mockSupabase
+  mockSupabase = makeSlugMock(null, { code: 'PGRST116', message: 'Not found' }) as unknown as typeof mockSupabase
   const { data, error } = await getItemBySlug('nonexistent')
   expect(error).toBeNull()
   expect(data).toBeNull()
