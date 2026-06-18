@@ -1,5 +1,22 @@
 import { describe, expect, test } from 'bun:test'
-import type { Publisher, ProviderItem, SkillItem, MCPItem, Item, InstallHook } from './index'
+import type {
+  Publisher,
+  ProviderItem,
+  SkillItem,
+  MCPItem,
+  Item,
+  InstallHook,
+  AASPaths,
+  InstalledItem,
+  RegistryJson,
+  ItemDetail,
+  SearchOptions,
+  InstallResult,
+  SyncResult,
+  UpdateAvailable,
+  UpdateResult,
+  ListOptions,
+} from './index'
 
 describe('Publisher', () => {
   test('can construct a valid Publisher', () => {
@@ -136,19 +153,6 @@ describe('Item discriminated union', () => {
     expect(items).toHaveLength(0)
   })
 })
-
-import type {
-  AASPaths,
-  InstalledItem,
-  RegistryJson,
-  ItemDetail,
-  SearchOptions,
-  InstallResult,
-  SyncResult,
-  UpdateAvailable,
-  UpdateResult,
-  ListOptions,
-} from './index'
 
 describe('AASPaths', () => {
   test('can construct AASPaths with all three directories', () => {

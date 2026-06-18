@@ -1,4 +1,5 @@
 import type { Publisher } from './publisher'
+import type { ToolTarget } from './engine'
 
 export type JsonSchema = Record<string, unknown>
 
@@ -22,7 +23,7 @@ export interface BaseItem {
   category: 'provider' | 'skill' | 'mcp'
   version: string
   publisher: Publisher
-  compatibleWith: ('claude' | 'codex')[]
+  compatibleWith: ToolTarget[]
   tags: string[]
   downloads: number
   /** Always 0 in MVP — rating system deferred */
