@@ -1,0 +1,16 @@
+.git
+.turbo
+node_modules
+**/node_modules
+dist
+**/dist
+.DS_Store
+test-output.txt
+image.png
+ai-agent-store-icon-under-1mb.jpg
+claude-fable-5.md
+supabase
+tasks
+docs
+!docker/assets
+!docker/assets/codex-linux-musl.tar.gz

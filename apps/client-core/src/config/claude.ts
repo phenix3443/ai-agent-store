@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, copyFile, unlink } from 'fs/promises'
 import { join } from 'path'
 import type { MCPItem } from '@aas/types'
+import { readProviderConnection } from './provider'
 
 const CATEGORY_DIR: Record<string, string> = {
   provider: 'providers',
@@ -26,6 +27,17 @@ async function readSettings(claudeConfigDir: string): Promise<Record<string, unk
 async function writeSettings(claudeConfigDir: string, settings: Record<string, unknown>): Promise<void> {
   await mkdir(claudeConfigDir, { recursive: true })
   await writeFile(join(claudeConfigDir, 'settings.json'), JSON.stringify(settings, null, 2))
+}
+
+export async function getClaudeAppliedProviderConnection(
+  claudeConfigDir: string
+): Promise<{ apiKey?: string; baseUrl?: string }> {
+  const settings = await readSettings(claudeConfigDir)
+  const env = (settings['env'] ?? {}) as Record<string, unknown>
+  return {
+    apiKey: typeof env['ANTHROPIC_AUTH_TOKEN'] === 'string' ? env['ANTHROPIC_AUTH_TOKEN'] : undefined,
+    baseUrl: typeof env['ANTHROPIC_BASE_URL'] === 'string' ? env['ANTHROPIC_BASE_URL'] : undefined,
+  }
 }
 
 export async function syncItemToClaude(
@@ -59,17 +71,21 @@ export async function syncItemToClaude(
       try { await unlink(destPath) } catch { /* already absent */ }
     }
   } else if (category === 'provider') {
-    let config: Record<string, unknown> = {}
-    try {
-      config = JSON.parse(await readFile(join(dir, 'config.json'), 'utf-8')) as Record<string, unknown>
-    } catch { /* no config yet */ }
-    const providers = (settings['providers'] ?? {}) as Record<string, unknown>
     if (action === 'add') {
-      providers[slug] = config
+      const connection = await readProviderConnection(dir)
+      if (connection.apiKey) {
+        const env = (settings['env'] ?? {}) as Record<string, unknown>
+        env['ANTHROPIC_AUTH_TOKEN'] = connection.apiKey
+        if (connection.baseUrl) env['ANTHROPIC_BASE_URL'] = connection.baseUrl
+        settings['env'] = env
+      }
     } else {
-      delete providers[slug]
+      const env = (settings['env'] ?? {}) as Record<string, unknown>
+      delete env['ANTHROPIC_AUTH_TOKEN']
+      delete env['ANTHROPIC_BASE_URL']
+      if (Object.keys(env).length > 0) settings['env'] = env
+      else delete settings['env']
     }
-    settings['providers'] = providers
     await writeSettings(claudeConfigDir, settings)
   }
 }

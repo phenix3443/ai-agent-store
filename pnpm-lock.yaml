@@ -39,6 +39,9 @@ importers:
       '@aas/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@iarna/toml':
+        specifier: ^2.2.5
+        version: 2.2.5
       js-yaml:
         specifier: ^4.1.0
         version: 4.2.0
@@ -160,6 +163,9 @@ packages:
   '@happy-dom/global-registrator@20.10.5':
     resolution: {integrity: sha512-U64VYxPsoO4RxNHzzp7N+sMHmXaY+GDzcc272mTfZFt0LKuuf7hoNCxna4+T472p+GRKUOtYlLLnVlxCWAcobw==}
     engines: {node: '>=20.0.0'}
+
+  '@iarna/toml@2.2.5':
+    resolution: {integrity: sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg==}
 
   '@jest/types@27.0.2':
     resolution: {integrity: sha512-XpjCtJ/99HB4PmyJ2vgmN7vT+JLP7RW1FBT9RgnMFS4Dt7cvIyBee8O3/j98aUZ34ZpenPZFqmaaObWSeL65dg==}
@@ -1257,6 +1263,8 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  '@iarna/toml@2.2.5': {}
 
   '@jest/types@27.0.2':
     dependencies:

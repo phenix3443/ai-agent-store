@@ -1,0 +1,41 @@
+import { homedir } from 'os'
+import { join, resolve } from 'path'
+import type { AASPaths } from '@aas/types'
+
+function requireEnv(name: 'AAS_HOME' | 'CLAUDE_CONFIG_DIR' | 'CODEX_CONFIG_DIR'): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`${name} is required for agent-package fixture runs`)
+  }
+  return value
+}
+
+export function getIsolatedFixturePathsFromEnv(): Required<AASPaths> {
+  const home = homedir()
+  const paths: Required<AASPaths> = {
+    aasHome: requireEnv('AAS_HOME'),
+    claudeConfigDir: requireEnv('CLAUDE_CONFIG_DIR'),
+    codexConfigDir: requireEnv('CODEX_CONFIG_DIR'),
+  }
+
+  if (process.env['AGENT_PACKAGE_FIXTURE_ALLOW_HOME_DIRS'] === '1') {
+    return paths
+  }
+
+  const disallowed = new Map<string, string>([
+    [resolve(paths.aasHome), resolve(join(home, '.agents'))],
+    [resolve(paths.claudeConfigDir), resolve(join(home, '.claude'))],
+    [resolve(paths.codexConfigDir), resolve(join(home, '.codex'))],
+  ])
+
+  for (const [actual, expectedHomePath] of disallowed.entries()) {
+    if (actual === expectedHomePath) {
+      throw new Error(
+        `agent-package fixture refuses to use real home directory path: ${actual}. ` +
+          'Set explicit isolated dirs, or set AGENT_PACKAGE_FIXTURE_ALLOW_HOME_DIRS=1 in a disposable environment.'
+      )
+    }
+  }
+
+  return paths
+}

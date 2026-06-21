@@ -1,7 +1,10 @@
-import { readFile, writeFile, mkdir, copyFile, unlink } from 'fs/promises'
+import { readFile, writeFile, mkdir, copyFile, unlink, rm } from 'fs/promises'
 import { join } from 'path'
-import yaml from 'js-yaml'
+import { parse, stringify } from '@iarna/toml'
+import type { JsonMap } from '@iarna/toml'
+import { load } from 'js-yaml'
 import type { MCPItem } from '@aas/types'
+import { readProviderConnection } from './provider'
 
 const CATEGORY_DIR: Record<string, string> = {
   provider: 'providers',
@@ -18,16 +21,113 @@ function resolveServerCmd(serverCommand: string, itemDir: string): { command: st
 
 async function readConfig(codexConfigDir: string): Promise<Record<string, unknown>> {
   try {
-    const raw = await readFile(join(codexConfigDir, 'config.yaml'), 'utf-8')
-    return (yaml.load(raw) as Record<string, unknown>) ?? {}
+    const raw = await readFile(join(codexConfigDir, 'config.toml'), 'utf-8')
+    return (parse(raw) as unknown as Record<string, unknown>) ?? {}
   } catch {
-    return {}
+    try {
+      const raw = await readFile(join(codexConfigDir, 'config.yaml'), 'utf-8')
+      const parsed = load(raw)
+      return parsed && typeof parsed === 'object' ? parsed as Record<string, unknown> : {}
+    } catch {
+      return {}
+    }
   }
 }
 
 async function writeConfig(codexConfigDir: string, config: Record<string, unknown>): Promise<void> {
   await mkdir(codexConfigDir, { recursive: true })
-  await writeFile(join(codexConfigDir, 'config.yaml'), yaml.dump(config))
+  await writeFile(join(codexConfigDir, 'config.toml'), stringify(config as JsonMap))
+}
+
+async function readAuth(codexConfigDir: string): Promise<Record<string, unknown>> {
+  try {
+    return JSON.parse(await readFile(join(codexConfigDir, 'auth.json'), 'utf-8')) as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
+async function writeAuth(codexConfigDir: string, auth: Record<string, unknown>): Promise<void> {
+  await mkdir(codexConfigDir, { recursive: true })
+  if (Object.keys(auth).length === 0) {
+    await rm(join(codexConfigDir, 'auth.json'), { force: true })
+    return
+  }
+  await writeFile(join(codexConfigDir, 'auth.json'), JSON.stringify(auth, null, 2))
+}
+
+interface CodexProviderConfigInput {
+  providerKey: string
+  name: string
+  baseUrl: string
+  apiKey: string
+  model?: string
+  adapter?: string
+}
+
+export async function upsertCodexProviderConnection(
+  codexConfigDir: string,
+  input: CodexProviderConfigInput
+): Promise<void> {
+  const config = await readConfig(codexConfigDir)
+  const auth = await readAuth(codexConfigDir)
+  const providers = (config['model_providers'] ?? {}) as Record<string, unknown>
+
+  config['preferred_auth_method'] = 'apikey'
+  config['model_provider'] = input.providerKey
+  if (input.model) config['model'] = input.model
+
+  const providerConfig: Record<string, unknown> = {
+    name: input.name,
+    base_url: input.baseUrl,
+    wire_api: 'responses',
+    requires_openai_auth: false,
+  }
+  if (input.adapter) providerConfig['adapter'] = input.adapter
+  providers[input.providerKey] = providerConfig
+  config['model_providers'] = providers
+
+  auth['OPENAI_API_KEY'] = input.apiKey
+  await writeConfig(codexConfigDir, config)
+  await writeAuth(codexConfigDir, auth)
+}
+
+export async function removeCodexProviderConnection(
+  codexConfigDir: string,
+  providerKey: string
+): Promise<void> {
+  const config = await readConfig(codexConfigDir)
+  const auth = await readAuth(codexConfigDir)
+  const isActiveProvider = config['model_provider'] === providerKey
+  const providers = (config['model_providers'] ?? {}) as Record<string, unknown>
+
+  if (isActiveProvider) {
+    delete config['model_provider']
+    if (config['preferred_auth_method'] === 'apikey') delete config['preferred_auth_method']
+    delete auth['OPENAI_API_KEY']
+  }
+
+  delete providers[providerKey]
+  if (Object.keys(providers).length > 0) config['model_providers'] = providers
+  else delete config['model_providers']
+
+  await writeConfig(codexConfigDir, config)
+  await writeAuth(codexConfigDir, auth)
+}
+
+export async function getCodexAppliedProviderConnection(
+  codexConfigDir: string
+): Promise<{ apiKey?: string; baseUrl?: string; providerKey?: string }> {
+  const config = await readConfig(codexConfigDir)
+  const auth = await readAuth(codexConfigDir)
+  const providerKey = typeof config['model_provider'] === 'string' ? config['model_provider'] : undefined
+  const providers = (config['model_providers'] ?? {}) as Record<string, unknown>
+  const provider = providerKey ? (providers[providerKey] as Record<string, unknown> | undefined) : undefined
+  return {
+    providerKey,
+    apiKey: typeof auth['OPENAI_API_KEY'] === 'string' ? auth['OPENAI_API_KEY'] : undefined,
+    baseUrl: provider && typeof provider['base_url'] === 'string' ? provider['base_url'] : undefined,
+  }
 }
 
 export async function syncItemToCodex(
@@ -61,17 +161,18 @@ export async function syncItemToCodex(
       try { await unlink(destPath) } catch { /* already absent */ }
     }
   } else if (category === 'provider') {
-    let itemConfig: Record<string, unknown> = {}
-    try {
-      itemConfig = JSON.parse(await readFile(join(dir, 'config.json'), 'utf-8')) as Record<string, unknown>
-    } catch { /* no config yet */ }
-    const providers = (config['providers'] ?? {}) as Record<string, unknown>
     if (action === 'add') {
-      providers[slug] = itemConfig
+      const connection = await readProviderConnection(dir)
+      if (connection.apiKey && connection.baseUrl) {
+        await upsertCodexProviderConnection(codexConfigDir, {
+          providerKey: slug,
+          name: slug,
+          baseUrl: connection.baseUrl,
+          apiKey: connection.apiKey,
+        })
+      }
     } else {
-      delete providers[slug]
+      await removeCodexProviderConnection(codexConfigDir, slug)
     }
-    config['providers'] = providers
-    await writeConfig(codexConfigDir, config)
   }
 }

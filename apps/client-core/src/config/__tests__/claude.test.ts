@@ -68,18 +68,42 @@ test('mcp remove deletes mcpServers entry', async () => {
 })
 
 test('provider add writes providers entry with config values', async () => {
-  await setupItem('provider', 'test-provider', providerManifest, { apiKey: 'sk-123' })
+  await setupItem('provider', 'test-provider', providerManifest, {
+    apiKey: 'sk-123',
+    baseUrl: 'https://api.example.com/v1',
+  })
   await syncItemToClaude('test-provider', 'provider', aasHome, claudeDir, 'add')
   const settings = JSON.parse(await readFile(join(claudeDir, 'settings.json'), 'utf-8'))
-  expect(settings.providers['test-provider'].apiKey).toBe('sk-123')
+  expect(settings.env.ANTHROPIC_AUTH_TOKEN).toBe('sk-123')
+  expect(settings.env.ANTHROPIC_BASE_URL).toBe('https://api.example.com/v1')
 })
 
 test('provider remove deletes providers entry', async () => {
-  await setupItem('provider', 'test-provider', providerManifest, {})
+  await setupItem('provider', 'test-provider', providerManifest, {
+    apiKey: 'sk-123',
+    baseUrl: 'https://api.example.com/v1',
+  })
   await syncItemToClaude('test-provider', 'provider', aasHome, claudeDir, 'add')
   await syncItemToClaude('test-provider', 'provider', aasHome, claudeDir, 'remove')
   const settings = JSON.parse(await readFile(join(claudeDir, 'settings.json'), 'utf-8'))
-  expect(settings.providers?.['test-provider']).toBeUndefined()
+  expect(settings.env?.ANTHROPIC_AUTH_TOKEN).toBeUndefined()
+  expect(settings.env?.ANTHROPIC_BASE_URL).toBeUndefined()
+})
+
+test('provider add preserves existing non-provider settings', async () => {
+  await writeFile(
+    join(claudeDir, 'settings.json'),
+    JSON.stringify({ model: 'claude-sonnet-4-6', env: { EXISTING_KEY: 'keep-me' } })
+  )
+  await setupItem('provider', 'test-provider', providerManifest, {
+    apiKey: 'sk-123',
+    baseUrl: 'https://api.example.com/v1',
+  })
+  await syncItemToClaude('test-provider', 'provider', aasHome, claudeDir, 'add')
+  const settings = JSON.parse(await readFile(join(claudeDir, 'settings.json'), 'utf-8'))
+  expect(settings.model).toBe('claude-sonnet-4-6')
+  expect(settings.env.EXISTING_KEY).toBe('keep-me')
+  expect(settings.env.ANTHROPIC_AUTH_TOKEN).toBe('sk-123')
 })
 
 test('skill add copies skill.md to claudeDir/skills/', async () => {

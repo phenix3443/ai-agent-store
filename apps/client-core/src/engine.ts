@@ -11,9 +11,10 @@ import { runHook, writeManifest } from './installer/hook-runner'
 import { postInstall as providerPostInstall } from './installer/provider'
 import { postInstall as skillPostInstall } from './installer/skill'
 import { postInstall as mcpPostInstall } from './installer/mcp'
-import { syncItemToClaude } from './config/claude'
-import { syncItemToCodex } from './config/codex'
+import { getClaudeAppliedProviderConnection, syncItemToClaude } from './config/claude'
+import { getCodexAppliedProviderConnection, syncItemToCodex } from './config/codex'
 import { checkUpdates as _checkUpdates, applyUpdate } from './updater/index'
+import { readProviderConnection } from './config/provider'
 
 export class AASEngineImpl implements AASEngine {
   private readonly paths: Required<AASPaths>
@@ -81,10 +82,23 @@ export class AASEngineImpl implements AASEngine {
     const registry = await readRegistry(this.paths.aasHome)
     const entry = findEntry(registry, slug)
     if (!entry) throw new Error(`Item not installed: ${slug}`)
+    let nextRegistry = registry
+    if (entry.category === 'provider') {
+      for (const installed of registry.installed) {
+        if (installed.slug === slug || installed.category !== 'provider') continue
+        if (!installed.enabledFor[target]) continue
+        await this._syncToTarget(installed.slug, installed.category, target, 'remove')
+        nextRegistry = upsertEntry(nextRegistry, {
+          ...installed,
+          enabledFor: { ...installed.enabledFor, [target]: false },
+          updatedAt: new Date().toISOString(),
+        })
+      }
+    }
     await this._syncToTarget(slug, entry.category, target, 'add')
     await writeRegistry(
       this.paths.aasHome,
-      upsertEntry(registry, {
+      upsertEntry(nextRegistry, {
         ...entry,
         enabledFor: { ...entry.enabledFor, [target]: true },
         updatedAt: new Date().toISOString(),
@@ -192,7 +206,7 @@ export class AASEngineImpl implements AASEngine {
 
   async list(options?: ListOptions): Promise<InstalledItem[]> {
     const registry = await readRegistry(this.paths.aasHome)
-    let items = registry.installed
+    let items = await this._resolveProviderStatus(registry.installed)
     if (options?.category) items = items.filter(e => e.category === options.category)
     if (options?.enabledFor) items = items.filter(e => e.enabledFor[options.enabledFor!] === true)
     return items
@@ -200,7 +214,8 @@ export class AASEngineImpl implements AASEngine {
 
   async info(slug: string): Promise<ItemDetail> {
     const registry = await readRegistry(this.paths.aasHome)
-    const entry = findEntry(registry, slug)
+    const entries = await this._resolveProviderStatus(registry.installed)
+    const entry = entries.find(item => item.slug === slug)
     if (!entry) throw new Error(`Item not installed: ${slug}`)
     const dir = itemDir(this.paths.aasHome, entry.category, slug)
     const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf-8')) as {
@@ -242,5 +257,57 @@ export class AASEngineImpl implements AASEngine {
     } else if (target === 'codex') {
       await syncItemToCodex(slug, category, this.paths.aasHome, this.paths.codexConfigDir, action)
     }
+  }
+
+  private async _resolveProviderStatus(items: InstalledItem[]): Promise<InstalledItem[]> {
+    const claudeActive = await this._findActiveProviderSlug(items, 'claude')
+    const codexActive = await this._findActiveProviderSlug(items, 'codex')
+
+    return items.map(item => {
+      if (item.category !== 'provider') return item
+      return {
+        ...item,
+        enabledFor: {
+          ...item.enabledFor,
+          ...(item.compatibleWith.includes('claude')
+            ? { claude: claudeActive === item.slug }
+            : {}),
+          ...(item.compatibleWith.includes('codex')
+            ? { codex: codexActive === item.slug }
+            : {}),
+        },
+      }
+    })
+  }
+
+  private async _findActiveProviderSlug(
+    items: InstalledItem[],
+    target: ToolTarget
+  ): Promise<string | undefined> {
+    const providers = items.filter(
+      item => item.category === 'provider' && item.compatibleWith.includes(target)
+    )
+    if (providers.length === 0) return undefined
+
+    if (target === 'codex') {
+      const applied = await getCodexAppliedProviderConnection(this.paths.codexConfigDir)
+      return providers.some(provider => provider.slug === applied.providerKey)
+        ? applied.providerKey
+        : undefined
+    }
+
+    const applied = await getClaudeAppliedProviderConnection(this.paths.claudeConfigDir)
+
+    if (!applied.apiKey || !applied.baseUrl) return undefined
+
+    for (const provider of providers) {
+      const dir = itemDir(this.paths.aasHome, provider.category, provider.slug)
+      const connection = await readProviderConnection(dir)
+      if (connection.apiKey === applied.apiKey && connection.baseUrl === applied.baseUrl) {
+        return provider.slug
+      }
+    }
+
+    return undefined
   }
 }

@@ -24,6 +24,10 @@ $AAS install hello-skill
 $AAS install fs-mcp-test
 
 echo ""
+echo "=== config: apply provider credentials ==="
+printf 'sk-local-e2e\n\n\n' | $AAS config openai-provider-test
+
+echo ""
 echo "=== list: all items installed and enabled ==="
 $AAS list
 
@@ -45,7 +49,8 @@ $AAS info openai-provider-test
 echo ""
 echo "=== verify: checking config files ==="
 
-grep -q '"openai-provider-test"' "$CLAUDE_CONFIG_DIR/settings.json" \
+grep -q '"ANTHROPIC_BASE_URL": "https://api.openai.com/v1"' "$CLAUDE_CONFIG_DIR/settings.json" \
+  && grep -q '"ANTHROPIC_AUTH_TOKEN": "sk-local-e2e"' "$CLAUDE_CONFIG_DIR/settings.json" \
   && echo "✓ provider in claude settings" \
   || { echo "✗ provider missing from claude settings"; exit 1; }
 
@@ -57,7 +62,8 @@ grep -q '"fs-mcp-test"' "$CLAUDE_CONFIG_DIR/settings.json" \
   && echo "✓ hello-skill.md exists and non-empty" \
   || { echo "✗ hello-skill.md missing or empty"; exit 1; }
 
-grep -q '"openai-provider-test"' "$CODEX_CONFIG_DIR/config.yaml" 2>/dev/null \
+grep -q 'model_provider = "openai-provider-test"' "$CODEX_CONFIG_DIR/config.toml" 2>/dev/null \
+  && grep -q '"OPENAI_API_KEY": "sk-local-e2e"' "$CODEX_CONFIG_DIR/auth.json" 2>/dev/null \
   && echo "✓ provider in codex config" \
   || echo "⚠ codex config not checked (codex may not be installed)"
 

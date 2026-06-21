@@ -1,0 +1,255 @@
+import { cp, mkdir, readFile, rm, writeFile } from 'fs/promises'
+import { join } from 'path'
+import type { AASPaths } from '@aas/types'
+import { upsertCodexProviderConnection } from './config/codex'
+import { resolvePaths } from './paths'
+
+type ToolTarget = 'claude' | 'codex'
+
+type TargetBinding = true | {
+  adapter?: string
+  config?: Record<string, unknown>
+}
+
+interface BaseComponent {
+  id: string
+  type: 'provider' | 'skill'
+  version: string
+  name?: string
+  description?: string
+  targets: Partial<Record<ToolTarget, TargetBinding>>
+}
+
+interface ProviderComponent extends BaseComponent {
+  type: 'provider'
+  configSchema: Record<string, unknown>
+  models?: string[]
+  provider: {
+    baseUrlKey?: string
+  }
+}
+
+interface SkillComponent extends BaseComponent {
+  type: 'skill'
+  source: {
+    repo: string
+    ref?: string
+    path: string
+    format?: 'markdown' | 'yaml' | 'text'
+  }
+}
+
+type AgentPackageComponent = ProviderComponent | SkillComponent
+
+interface AgentPackageManifest {
+  schemaVersion: 1 | 2
+  name: string
+  displayName: string
+  version: string
+  description: string
+  publisher: {
+    slug: string
+    name: string
+  }
+  categories?: string[]
+  keywords?: string[]
+  components: AgentPackageComponent[]
+}
+
+interface LocalPackageRegistryEntry {
+  packageId: string
+  packageDir: string
+  version: string
+  installedAt: string
+  updatedAt: string
+  targets: Partial<Record<ToolTarget, boolean>>
+}
+
+interface LocalPackageRegistry {
+  installedPackages: LocalPackageRegistryEntry[]
+}
+
+function packageIdOf(manifest: AgentPackageManifest): string {
+  return `${manifest.publisher.slug}.${manifest.name}`
+}
+
+function componentRef(manifest: AgentPackageManifest, component: AgentPackageComponent): string {
+  return `${packageIdOf(manifest)}#${component.id}`
+}
+
+async function readJson<T>(path: string): Promise<T> {
+  return JSON.parse(await readFile(path, 'utf-8')) as T
+}
+
+async function readRegistry(aasHome: string): Promise<LocalPackageRegistry> {
+  try {
+    return await readJson<LocalPackageRegistry>(join(aasHome, 'packages-registry.json'))
+  } catch {
+    return { installedPackages: [] }
+  }
+}
+
+async function writeRegistry(aasHome: string, registry: LocalPackageRegistry): Promise<void> {
+  await mkdir(aasHome, { recursive: true })
+  await writeFile(join(aasHome, 'packages-registry.json'), JSON.stringify(registry, null, 2))
+}
+
+async function readPackageManifest(packageDir: string): Promise<AgentPackageManifest> {
+  return readJson<AgentPackageManifest>(join(packageDir, 'agent-package.json'))
+}
+
+async function readPackageConfig(packageDir: string): Promise<Record<string, unknown>> {
+  try {
+    return await readJson<Record<string, unknown>>(join(packageDir, 'package-config.json'))
+  } catch {
+    return {}
+  }
+}
+
+async function writePackageConfig(packageDir: string, values: Record<string, unknown>): Promise<void> {
+  await writeFile(join(packageDir, 'package-config.json'), JSON.stringify(values, null, 2))
+}
+
+async function readClaudeSettings(claudeConfigDir: string): Promise<Record<string, unknown>> {
+  try {
+    return await readJson<Record<string, unknown>>(join(claudeConfigDir, 'settings.json'))
+  } catch {
+    return {}
+  }
+}
+
+async function writeClaudeSettings(claudeConfigDir: string, settings: Record<string, unknown>): Promise<void> {
+  await mkdir(claudeConfigDir, { recursive: true })
+  await writeFile(join(claudeConfigDir, 'settings.json'), JSON.stringify(settings, null, 2))
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined
+}
+
+function bindingEnabled(binding: TargetBinding | undefined): boolean {
+  return binding !== undefined
+}
+
+function providerAdapterFor(target: ToolTarget, binding: TargetBinding | undefined): string {
+  if (binding && binding !== true && binding.adapter) return binding.adapter
+  return target === 'claude' ? 'anthropic-compatible-provider' : 'openai-compatible-provider'
+}
+
+function skillAdapterFor(binding: TargetBinding | undefined): string {
+  if (binding && binding !== true && binding.adapter) return binding.adapter
+  return 'skill-file'
+}
+
+export class AgentPackageEngine {
+  private readonly paths: Required<AASPaths>
+
+  constructor(pathOverrides?: Partial<AASPaths>) {
+    this.paths = resolvePaths(pathOverrides)
+  }
+
+  async installFromPath(sourceDir: string): Promise<{ packageId: string; packageDir: string }> {
+    const manifest = await readPackageManifest(sourceDir)
+    const packageId = packageIdOf(manifest)
+    const destDir = join(this.paths.aasHome, 'packages', packageId)
+    await rm(destDir, { recursive: true, force: true })
+    await mkdir(join(this.paths.aasHome, 'packages'), { recursive: true })
+    await cp(sourceDir, destDir, { recursive: true })
+
+    const registry = await readRegistry(this.paths.aasHome)
+    const now = new Date().toISOString()
+    const next = registry.installedPackages.filter(item => item.packageId !== packageId)
+    next.push({
+      packageId,
+      packageDir: destDir,
+      version: manifest.version,
+      installedAt: now,
+      updatedAt: now,
+      targets: {},
+    })
+    await writeRegistry(this.paths.aasHome, { installedPackages: next })
+    return { packageId, packageDir: destDir }
+  }
+
+  async setPackageConfig(packageId: string, values: Record<string, unknown>): Promise<void> {
+    const packageDir = join(this.paths.aasHome, 'packages', packageId)
+    await writePackageConfig(packageDir, values)
+  }
+
+  async enablePackage(packageId: string, target: ToolTarget): Promise<void> {
+    const packageDir = join(this.paths.aasHome, 'packages', packageId)
+    const manifest = await readPackageManifest(packageDir)
+    const packageConfig = await readPackageConfig(packageDir)
+
+    for (const component of manifest.components) {
+      const binding = component.targets[target]
+      if (!bindingEnabled(binding)) continue
+      if (component.type === 'provider') {
+        await this.syncProviderComponent(manifest, component, packageConfig, target)
+      } else {
+        await this.syncSkillComponent(manifest, component, target)
+      }
+    }
+
+    const registry = await readRegistry(this.paths.aasHome)
+    const now = new Date().toISOString()
+    await writeRegistry(this.paths.aasHome, {
+      installedPackages: registry.installedPackages.map(item =>
+        item.packageId === packageId
+          ? { ...item, updatedAt: now, targets: { ...item.targets, [target]: true } }
+          : item
+      ),
+    })
+  }
+
+  private async syncProviderComponent(
+    manifest: AgentPackageManifest,
+    component: ProviderComponent,
+    packageConfig: Record<string, unknown>,
+    target: ToolTarget
+  ): Promise<void> {
+    const componentConfig = (packageConfig[component.id] ?? {}) as Record<string, unknown>
+    const apiKey = readString(componentConfig['apiKey'])
+    const baseUrlKey = component.provider.baseUrlKey ?? 'baseUrl'
+    const baseUrl = readString(componentConfig[baseUrlKey])
+    if (!apiKey || !baseUrl) throw new Error(`Missing provider config for ${component.id}`)
+
+    if (target === 'claude') {
+      const settings = await readClaudeSettings(this.paths.claudeConfigDir)
+      const env = (settings['env'] ?? {}) as Record<string, unknown>
+      env['ANTHROPIC_AUTH_TOKEN'] = apiKey
+      env['ANTHROPIC_BASE_URL'] = baseUrl
+      settings['env'] = env
+      await writeClaudeSettings(this.paths.claudeConfigDir, settings)
+      return
+    }
+
+    const providerKey = componentRef(manifest, component)
+    await upsertCodexProviderConnection(this.paths.codexConfigDir, {
+      providerKey,
+      name: component.name ?? component.id,
+      baseUrl,
+      apiKey,
+      adapter: providerAdapterFor('codex', component.targets.codex),
+      model: component.models?.[0],
+    })
+  }
+
+  private async syncSkillComponent(
+    manifest: AgentPackageManifest,
+    component: SkillComponent,
+    target: ToolTarget
+  ): Promise<void> {
+    const adapter = skillAdapterFor(component.targets[target])
+    if (adapter !== 'skill-file') throw new Error(`Unsupported skill adapter: ${adapter}`)
+
+    const packageDir = join(this.paths.aasHome, 'packages', packageIdOf(manifest))
+    const sourcePath = join(packageDir, 'sources', component.source.repo, component.source.path)
+    const content = await readFile(sourcePath, 'utf-8')
+    const destDir = target === 'claude'
+      ? join(this.paths.claudeConfigDir, 'skills')
+      : join(this.paths.codexConfigDir, 'skills')
+    await mkdir(destDir, { recursive: true })
+    await writeFile(join(destDir, `${componentRef(manifest, component)}.md`), content)
+  }
+}

@@ -19,6 +19,7 @@
   "dependencies": {
     "@aas/sdk": "workspace:*",
     "@aas/types": "workspace:*",
+    "@iarna/toml": "^2.2.5",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {

@@ -1,9 +1,9 @@
 import { test, expect, beforeEach, afterEach } from 'bun:test'
 import { mkdtemp, rm, readFile, writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
-import yaml from 'js-yaml'
 import { syncItemToCodex } from '../codex'
 import type { MCPItem, ProviderItem } from '@aas/types'
+import { parse } from '@iarna/toml'
 
 let aasHome: string
 let codexDir: string
@@ -46,10 +46,10 @@ async function setupItem(category: string, slug: string, manifest: object, confi
 }
 
 async function readConfig(dir: string): Promise<Record<string, unknown>> {
-  return yaml.load(await readFile(join(dir, 'config.yaml'), 'utf-8')) as Record<string, unknown>
+  return parse(await readFile(join(dir, 'config.toml'), 'utf-8')) as unknown as Record<string, unknown>
 }
 
-test('mcp add writes mcpServers to config.yaml', async () => {
+test('mcp add writes mcpServers to codex config', async () => {
   await setupItem('mcp', 'test-mcp', mcpManifest)
   await syncItemToCodex('test-mcp', 'mcp', aasHome, codexDir, 'add')
   const config = await readConfig(codexDir)
@@ -65,12 +65,34 @@ test('mcp remove deletes mcpServers entry', async () => {
   expect((config.mcpServers as Record<string, unknown>)?.['test-mcp']).toBeUndefined()
 })
 
-test('provider add writes providers to config.yaml', async () => {
-  await setupItem('provider', 'test-provider', providerManifest, { apiKey: 'key-1' })
+test('provider add writes providers to codex config', async () => {
+  await setupItem('provider', 'test-provider', providerManifest, {
+    apiKey: 'key-1',
+    baseUrl: 'https://api.example.com/v1',
+  })
   await syncItemToCodex('test-provider', 'provider', aasHome, codexDir, 'add')
   const config = await readConfig(codexDir)
-  const prov = (config.providers as Record<string, unknown>)['test-provider'] as { apiKey: string }
-  expect(prov.apiKey).toBe('key-1')
+  expect(config.model_provider).toBe('test-provider')
+  expect(config.preferred_auth_method).toBe('apikey')
+  const prov = (config.model_providers as Record<string, unknown>)['test-provider'] as Record<string, unknown>
+  expect(prov.base_url).toBe('https://api.example.com/v1')
+  expect(prov.wire_api).toBe('responses')
+  const auth = JSON.parse(await readFile(join(codexDir, 'auth.json'), 'utf-8'))
+  expect(auth.OPENAI_API_KEY).toBe('key-1')
+})
+
+test('provider remove deletes direct-apply codex settings', async () => {
+  await setupItem('provider', 'test-provider', providerManifest, {
+    apiKey: 'key-1',
+    baseUrl: 'https://api.example.com/v1',
+  })
+  await syncItemToCodex('test-provider', 'provider', aasHome, codexDir, 'add')
+  await syncItemToCodex('test-provider', 'provider', aasHome, codexDir, 'remove')
+  const config = await readConfig(codexDir)
+  expect(config.model_provider).toBeUndefined()
+  expect(config.preferred_auth_method).toBeUndefined()
+  expect(config.model_providers).toBeUndefined()
+  await expect(readFile(join(codexDir, 'auth.json'), 'utf-8')).rejects.toThrow()
 })
 
 test('skill add copies skill.md to codexDir/skills/', async () => {
@@ -96,11 +118,74 @@ test('mcp remove works even when item directory does not exist', async () => {
   expect((config.mcpServers as Record<string, unknown>)?.['test-mcp']).toBeUndefined()
 })
 
-test('mcp add preserves existing config.yaml keys', async () => {
-  await writeFile(join(codexDir, 'config.yaml'), yaml.dump({ model: 'codex-mini' }))
+test('mcp add preserves existing config keys', async () => {
+  await writeFile(join(codexDir, 'config.toml'), 'model = "codex-mini"\n')
   await setupItem('mcp', 'test-mcp', mcpManifest)
   await syncItemToCodex('test-mcp', 'mcp', aasHome, codexDir, 'add')
   const config = await readConfig(codexDir)
   expect(config.model).toBe('codex-mini')
   expect((config.mcpServers as Record<string, unknown>)['test-mcp']).toBeDefined()
+})
+
+test('provider add preserves existing config.toml keys', async () => {
+  await writeFile(join(codexDir, 'config.toml'), 'model = "gpt-5-codex"\n')
+  await writeFile(join(codexDir, 'auth.json'), JSON.stringify({ EXISTING_KEY: 'keep-me' }))
+  await setupItem('provider', 'test-provider', providerManifest, {
+    apiKey: 'key-1',
+    baseUrl: 'https://api.example.com/v1',
+  })
+  await syncItemToCodex('test-provider', 'provider', aasHome, codexDir, 'add')
+  const config = await readConfig(codexDir)
+  expect(config.model).toBe('gpt-5-codex')
+  const auth = JSON.parse(await readFile(join(codexDir, 'auth.json'), 'utf-8'))
+  expect(auth.EXISTING_KEY).toBe('keep-me')
+  expect(auth.OPENAI_API_KEY).toBe('key-1')
+})
+
+test('provider add migrates existing config.yaml content into config.toml', async () => {
+  await writeFile(join(codexDir, 'config.yaml'), 'model: yaml-model\nmcpServers:\n  existing:\n    command: keep\n')
+  await setupItem('provider', 'test-provider', providerManifest, {
+    apiKey: 'key-1',
+    baseUrl: 'https://api.example.com/v1',
+  })
+
+  await syncItemToCodex('test-provider', 'provider', aasHome, codexDir, 'add')
+
+  const config = await readConfig(codexDir)
+  expect(config.model).toBe('yaml-model')
+  expect((config.mcpServers as Record<string, unknown>).existing).toBeDefined()
+  expect(config.model_provider).toBe('test-provider')
+})
+
+test('provider remove keeps shared auth when removing an inactive provider', async () => {
+  await writeFile(
+    join(codexDir, 'config.toml'),
+    'model_provider = "other-provider"\npreferred_auth_method = "apikey"\n' +
+      '[model_providers.test-provider]\n' +
+      'name = "test-provider"\n' +
+      'base_url = "https://api.example.com/v1"\n' +
+      'wire_api = "responses"\n' +
+      'requires_openai_auth = false\n' +
+      '[model_providers.other-provider]\n' +
+      'name = "other-provider"\n' +
+      'base_url = "https://api.other.example/v1"\n' +
+      'wire_api = "responses"\n' +
+      'requires_openai_auth = false\n'
+  )
+  await writeFile(join(codexDir, 'auth.json'), JSON.stringify({ OPENAI_API_KEY: 'shared-key' }))
+  await setupItem('provider', 'test-provider', providerManifest, {
+    apiKey: 'key-1',
+    baseUrl: 'https://api.example.com/v1',
+  })
+
+  await syncItemToCodex('test-provider', 'provider', aasHome, codexDir, 'remove')
+
+  const config = await readConfig(codexDir)
+  expect(config.model_provider).toBe('other-provider')
+  expect(config.preferred_auth_method).toBe('apikey')
+  expect((config.model_providers as Record<string, unknown>)['test-provider']).toBeUndefined()
+  expect((config.model_providers as Record<string, unknown>)['other-provider']).toBeDefined()
+
+  const auth = JSON.parse(await readFile(join(codexDir, 'auth.json'), 'utf-8'))
+  expect(auth.OPENAI_API_KEY).toBe('shared-key')
 })
