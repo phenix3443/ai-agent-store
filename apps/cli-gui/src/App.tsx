@@ -4,11 +4,13 @@ import { Sidebar } from './components/Sidebar'
 import { TerminalLogProvider } from './state/TerminalLog'
 import { TerminalPane } from './components/TerminalPane'
 import { InstalledList } from './components/InstalledList'
+import { BrowseList } from './components/BrowseList'
 
 function SectionContent() {
   const { section } = useAppState()
   if (section === 'installed') return <InstalledList />
-  return <p className="font-mono text-sm text-store-text-2">section content goes here (Task 8+)</p>
+  if (section === 'browse') return <BrowseList />
+  return <p className="font-mono text-sm text-store-text-2">section content goes here (Task 9+)</p>
 }
 
 export function App() {
