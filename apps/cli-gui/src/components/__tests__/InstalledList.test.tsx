@@ -1,7 +1,8 @@
-import { test, expect, afterEach, mock } from 'bun:test'
+import { test, expect, afterEach, mock, spyOn } from 'bun:test'
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
 import { AppStateProvider } from '../../state/AppState'
 import { TerminalLogProvider, useTerminalLog } from '../../state/TerminalLog'
+import * as rpcModule from '../../lib/rpc'
 
 afterEach(() => { cleanup(); mock.restore() })
 
@@ -14,9 +15,8 @@ const listResult = [
 ]
 
 function mockRpc(handlers: Record<string, (...args: unknown[]) => unknown>) {
-  mock.module('../../lib/rpc', () => ({
-    callRpc: async (method: string, args: unknown[] = []) => handlers[method]?.(...args),
-  }))
+  spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string, args: unknown[] = []) =>
+    handlers[method]?.(...args)) as typeof rpcModule.callRpc)
 }
 
 function TerminalProbe() {
