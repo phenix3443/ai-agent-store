@@ -9,6 +9,7 @@ import { runDisable } from './commands/disable'
 import { runConfig } from './commands/config'
 import { runSync } from './commands/sync'
 import { runUpdate } from './commands/update'
+import { runRpc } from './commands/rpc'
 
 const USAGE = `aas — AI Agent Store CLI
 
@@ -47,6 +48,10 @@ async function main(): Promise<void> {
     case 'config':    await runConfig(engine, rest); break
     case 'sync':      await runSync(engine, rest); break
     case 'update':    await runUpdate(engine, rest); break
+    case '__rpc': {
+      const code = await runRpc(engine, rest)
+      process.exit(code)
+    }
     default:
       console.error(`Unknown command: ${command}`)
       console.log(USAGE)
