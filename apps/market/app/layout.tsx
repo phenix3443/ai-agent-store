@@ -18,8 +18,10 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
+  drawer,
 }: {
   children: React.ReactNode
+  drawer: React.ReactNode
 }) {
   const locale = await getLocale()
   const messages = await getMessages()
@@ -32,6 +34,7 @@ export default async function RootLayout({
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               {children}
             </div>
+            {drawer}
           </ClientStateProvider>
         </NextIntlClientProvider>
       </body>
