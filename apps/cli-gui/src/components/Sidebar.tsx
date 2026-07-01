@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Download, Compass, RefreshCw, Heart } from 'lucide-react'
 import { useAppState, type Section } from '../state/AppState'
+import { SettingsModal } from './SettingsModal'
 
 const SECTIONS: { value: Section; label: string; icon: typeof Download }[] = [
   { value: 'installed', label: '已安装', icon: Download },
@@ -10,6 +12,7 @@ const SECTIONS: { value: Section; label: string; icon: typeof Download }[] = [
 
 export function Sidebar() {
   const { section, setSection, agentApp, setAgentApp } = useAppState()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <aside className="flex w-56 flex-col gap-4 border-r border-store-border bg-store-sidebar p-4">
@@ -49,6 +52,15 @@ export function Sidebar() {
           Codex
         </button>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setSettingsOpen(true)}
+        className="rounded-lg px-3 py-2 text-left text-sm text-store-text-2 hover:text-store-text"
+      >
+        设置
+      </button>
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </aside>
   )
 }

@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "fs-appdata",
+  "description": "Allow reading/writing the app's local state file",
+  "windows": ["main"],
+  "permissions": [
+    "fs:allow-app-write-recursive",
+    "fs:allow-app-read-recursive"
+  ]
+}
