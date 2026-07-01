@@ -5,6 +5,7 @@ import { CategoryTabs } from '@/components/CategoryTabs'
 import { SortSelect } from '@/components/SortSelect'
 import { SearchInput } from '@/components/SearchInput'
 import { ItemGrid } from '@/components/ItemGrid'
+import { PublishModalTrigger } from '@/components/PublishModalTrigger'
 
 interface StorePageProps {
   searchParams: {
@@ -32,6 +33,7 @@ export default async function StorePage({ searchParams }: StorePageProps) {
   return (
     <>
       <Header />
+      <PublishModalTrigger />
       <main className="flex flex-col gap-6 py-8">
         <FeaturedCarousel items={featured} />
 
