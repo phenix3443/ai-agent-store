@@ -9,3 +9,4 @@ dist/
 .env.local
 .env.*.local
 bin/aas
+.DS_Store
