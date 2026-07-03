@@ -5,7 +5,8 @@
   "identifier": "com.aas.cli-gui",
   "build": {
     "frontendDist": "../dist",
-    "devUrl": "http://localhost:5183"
+    "devUrl": "http://localhost:5183",
+    "beforeDevCommand": "pnpm dev"
   },
   "app": {
     "windows": [
