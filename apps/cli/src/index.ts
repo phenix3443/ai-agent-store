@@ -10,6 +10,10 @@ import { runConfig } from './commands/config'
 import { runSync } from './commands/sync'
 import { runUpdate } from './commands/update'
 import { runRpc } from './commands/rpc'
+import { runRelay } from './commands/relay'
+import { readFile, writeFile, rm } from 'fs/promises'
+import { join } from 'path'
+import { homedir } from 'os'
 
 const USAGE = `aas — AI Agent Store CLI
 
@@ -23,9 +27,30 @@ Commands:
   disable <slug> --for <tool>      Disable for claude or codex
   config <slug>                    Configure an item's settings
   sync [--for <tool>]              Sync enabled items to tool configs
+  relay <start|stop|status>        Manage the local provider relay
   update [slug]                    Update installed items
   list [--for <tool>]              List installed items
   info <slug>                      Show item details`
+
+function realRelayOps() {
+  const pidFile = join(process.env['AAS_HOME'] ?? join(homedir(), '.agents'), 'relay.pid')
+  return {
+    spawnDetached: (scriptPath: string) => {
+      const proc = Bun.spawn(['bun', scriptPath], { stdio: ['ignore', 'ignore', 'ignore'] })
+      proc.unref()
+      return proc.pid
+    },
+    isRunning: (pid: number) => {
+      try { process.kill(pid, 0); return true } catch { return false }
+    },
+    kill: (pid: number) => { try { process.kill(pid, 'SIGTERM') } catch { /* already dead */ } },
+    readPidFile: async () => {
+      try { return Number((await readFile(pidFile, 'utf-8')).trim()) } catch { return null }
+    },
+    writePidFile: async (pid: number) => { await writeFile(pidFile, String(pid)) },
+    removePidFile: async () => { await rm(pidFile, { force: true }) },
+  }
+}
 
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2)
@@ -48,6 +73,7 @@ async function main(): Promise<void> {
     case 'config':    await runConfig(engine, rest); break
     case 'sync':      await runSync(engine, rest); break
     case 'update':    await runUpdate(engine, rest); break
+    case 'relay':     await runRelay(rest, realRelayOps()); break
     case '__rpc': {
       const code = await runRpc(engine, rest)
       process.exit(code)
