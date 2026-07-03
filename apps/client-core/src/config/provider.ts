@@ -1,4 +1,4 @@
-import { readFile } from 'fs/promises'
+import { mkdir, readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
 
 export type ProviderAuthType = 'bearer' | 'anthropic' | { header: string }
@@ -49,4 +49,31 @@ export async function readProviderConnection(itemDir: string): Promise<ProviderC
   } catch {
     return {}
   }
+}
+
+export async function duplicateProviderConnection(
+  sourceDir: string,
+  targetDir: string,
+  newSlug: string
+): Promise<void> {
+  await mkdir(targetDir, { recursive: true })
+
+  const manifestRaw = JSON.parse(
+    await readFile(join(sourceDir, 'manifest.json'), 'utf-8')
+  ) as Record<string, unknown>
+  const manifest = {
+    ...manifestRaw,
+    slug: newSlug,
+    id: newSlug,
+    name: `${String(manifestRaw['name'])} 副本`,
+  }
+  await writeFile(join(targetDir, 'manifest.json'), JSON.stringify(manifest, null, 2))
+
+  let config = '{}'
+  try {
+    config = await readFile(join(sourceDir, 'config.json'), 'utf-8')
+  } catch {
+    // source has no config.json — fall back to an empty object
+  }
+  await writeFile(join(targetDir, 'config.json'), config)
 }

@@ -1,7 +1,8 @@
 import { test, expect, beforeEach, afterEach } from 'bun:test'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdtemp, rm, writeFile, mkdir, readFile } from 'fs/promises'
 import { join } from 'path'
 import { readProviderConnection } from '../provider'
+import { duplicateProviderConnection } from '../provider'
 
 let dir: string
 
@@ -45,4 +46,34 @@ test('readProviderConnection ignores a malformed authType', async () => {
   await writeFile(join(dir, 'config.json'), JSON.stringify({ apiKey: 'k', authType: 42 }))
   const conn = await readProviderConnection(dir)
   expect(conn.authType).toBeUndefined()
+})
+
+test('duplicateProviderConnection copies manifest with new slug/id and appends a suffix to the name', async () => {
+  const sourceDir = join(dir, 'source')
+  const targetDir = join(dir, 'target')
+  await mkdir(sourceDir, { recursive: true })
+  await writeFile(join(sourceDir, 'manifest.json'), JSON.stringify({ id: 'yls', slug: 'yls', name: 'yls' }))
+  await writeFile(join(sourceDir, 'config.json'), JSON.stringify({ apiKey: 'k', baseUrl: 'https://x.com' }))
+
+  await duplicateProviderConnection(sourceDir, targetDir, 'yls-copy')
+
+  const manifest = JSON.parse(await readFile(join(targetDir, 'manifest.json'), 'utf-8'))
+  expect(manifest.slug).toBe('yls-copy')
+  expect(manifest.id).toBe('yls-copy')
+  expect(manifest.name).toBe('yls 副本')
+
+  const config = JSON.parse(await readFile(join(targetDir, 'config.json'), 'utf-8'))
+  expect(config).toEqual({ apiKey: 'k', baseUrl: 'https://x.com' })
+})
+
+test('duplicateProviderConnection writes an empty config.json when the source has none', async () => {
+  const sourceDir = join(dir, 'source-no-config')
+  const targetDir = join(dir, 'target-no-config')
+  await mkdir(sourceDir, { recursive: true })
+  await writeFile(join(sourceDir, 'manifest.json'), JSON.stringify({ id: 'yls', slug: 'yls', name: 'yls' }))
+
+  await duplicateProviderConnection(sourceDir, targetDir, 'yls-copy-2')
+
+  const config = JSON.parse(await readFile(join(targetDir, 'config.json'), 'utf-8'))
+  expect(config).toEqual({})
 })
