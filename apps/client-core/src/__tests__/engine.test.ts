@@ -237,9 +237,11 @@ test('enabling a provider disables other providers for the same target', async (
   await engine.enable('test-provider', 'claude')
   await engine.enable('test-provider-2', 'claude')
 
+  // Provider enable now points Claude at the local relay rather than writing the
+  // real per-provider credential, so the settings only reflect the relay sentinel.
   const settings = JSON.parse(await readFile(join(claudeDir, 'settings.json'), 'utf-8'))
-  expect(settings.env.ANTHROPIC_AUTH_TOKEN).toBe('sk-2')
-  expect(settings.env.ANTHROPIC_BASE_URL).toBe('https://api.two.example/v1')
+  expect(settings.env.ANTHROPIC_AUTH_TOKEN).toBe('aas-relay')
+  expect(settings.env.ANTHROPIC_BASE_URL).toBe('http://127.0.0.1:18780')
 
   const reg = JSON.parse(await readFile(join(aasHome, 'registry.json'), 'utf-8'))
   const first = reg.installed.find((item: { slug: string }) => item.slug === 'test-provider')
@@ -361,6 +363,74 @@ test('uninstall throws for unknown slug', async () => {
 
 test('info throws for unknown slug', async () => {
   await expect(engine.info('nonexistent')).rejects.toThrow('not installed')
+})
+
+test('enable on a provider item points Claude at the relay instead of writing the real apiKey', async () => {
+  mockFetch({ '/api/items/test-provider': { item: providerItem } })
+  await engine.install('test-provider')
+  await writeFile(
+    join(aasHome, 'providers', 'test-provider', 'config.json'),
+    JSON.stringify({ apiKey: 'sk-real-secret', baseUrl: 'https://real-upstream.example.com' })
+  )
+
+  await engine.enable('test-provider', 'claude')
+
+  const settings = JSON.parse(await readFile(join(claudeDir, 'settings.json'), 'utf-8')) as Record<string, unknown>
+  const env = settings['env'] as Record<string, unknown>
+  expect(env['ANTHROPIC_BASE_URL']).toBe('http://127.0.0.1:18780')
+  expect(env['ANTHROPIC_AUTH_TOKEN']).toBe('aas-relay')
+  expect(env['ANTHROPIC_AUTH_TOKEN']).not.toBe('sk-real-secret')
+})
+
+test('disable on a provider item restores Claude settings via the relay snapshot', async () => {
+  mockFetch({ '/api/items/test-provider': { item: providerItem } })
+  await engine.install('test-provider')
+  await mkdir(claudeDir, { recursive: true })
+  await writeFile(join(claudeDir, 'settings.json'), JSON.stringify({
+    env: { ANTHROPIC_BASE_URL: 'https://pre-existing.example.com', ANTHROPIC_AUTH_TOKEN: 'pre-existing-token' },
+  }))
+  await writeFile(
+    join(aasHome, 'providers', 'test-provider', 'config.json'),
+    JSON.stringify({ apiKey: 'sk-real-secret', baseUrl: 'https://real-upstream.example.com' })
+  )
+
+  await engine.enable('test-provider', 'claude')
+  await engine.disable('test-provider', 'claude')
+
+  const settings = JSON.parse(await readFile(join(claudeDir, 'settings.json'), 'utf-8')) as Record<string, unknown>
+  const env = settings['env'] as Record<string, unknown>
+  expect(env['ANTHROPIC_BASE_URL']).toBe('https://pre-existing.example.com')
+  expect(env['ANTHROPIC_AUTH_TOKEN']).toBe('pre-existing-token')
+})
+
+test('enable on a provider item points Codex at the relay instead of writing the real apiKey', async () => {
+  mockFetch({ '/api/items/test-provider': { item: providerItem } })
+  await engine.install('test-provider')
+  await writeFile(
+    join(aasHome, 'providers', 'test-provider', 'config.json'),
+    JSON.stringify({ apiKey: 'sk-real-secret', baseUrl: 'https://real-upstream.example.com' })
+  )
+
+  await engine.enable('test-provider', 'codex')
+
+  const auth = JSON.parse(await readFile(join(codexDir, 'auth.json'), 'utf-8')) as Record<string, unknown>
+  expect(auth['OPENAI_API_KEY']).toBe('aas-relay')
+  expect(auth['OPENAI_API_KEY']).not.toBe('sk-real-secret')
+})
+
+test('enable/disable on a skill item is unaffected by the relay change', async () => {
+  mockFetch({ '/api/items/test-skill': { item: skillItem } })
+  await engine.install('test-skill')
+  await writeFile(join(aasHome, 'skills', 'test-skill', 'skill.md'), '# Test Skill')
+  await engine.enable('test-skill', 'claude')
+
+  const skillContent = await readFile(join(claudeDir, 'skills', 'test-skill.md'), 'utf-8')
+  expect(skillContent).toBe('# Test Skill')
+  // Skills sync via file copy, not env vars — settings.json should be untouched by this enable call.
+  const { access } = await import('fs/promises')
+  await expect(access(join(claudeDir, 'settings.json'))).rejects.toThrow()
+
+  await engine.disable('test-skill', 'claude')
 })
 
 // suppress unused variable warning for skillItem

@@ -11,8 +11,12 @@ import { runHook, writeManifest } from './installer/hook-runner'
 import { postInstall as providerPostInstall } from './installer/provider'
 import { postInstall as skillPostInstall } from './installer/skill'
 import { postInstall as mcpPostInstall } from './installer/mcp'
-import { getClaudeAppliedProviderConnection, syncItemToClaude } from './config/claude'
-import { getCodexAppliedProviderConnection, syncItemToCodex } from './config/codex'
+import {
+  getClaudeAppliedProviderConnection, syncItemToClaude, enableRelayForClaude, disableRelayForClaude,
+} from './config/claude'
+import {
+  getCodexAppliedProviderConnection, syncItemToCodex, enableRelayForCodex, disableRelayForCodex,
+} from './config/codex'
 import { checkUpdates as _checkUpdates, applyUpdate } from './updater/index'
 import { readProviderConnection } from './config/provider'
 
@@ -255,6 +259,17 @@ export class AASEngineImpl implements AASEngine {
     target: ToolTarget,
     action: 'add' | 'remove'
   ): Promise<void> {
+    if (category === 'provider') {
+      if (target === 'claude') {
+        if (action === 'add') await enableRelayForClaude(this.paths.aasHome, this.paths.claudeConfigDir)
+        else await disableRelayForClaude(this.paths.aasHome, this.paths.claudeConfigDir)
+      } else if (target === 'codex') {
+        if (action === 'add') await enableRelayForCodex(this.paths.aasHome, this.paths.codexConfigDir)
+        else await disableRelayForCodex(this.paths.aasHome, this.paths.codexConfigDir)
+      }
+      return
+    }
+
     if (target === 'claude') {
       await syncItemToClaude(slug, category, this.paths.aasHome, this.paths.claudeConfigDir, action)
     } else if (target === 'codex') {
