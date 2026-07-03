@@ -1,0 +1,105 @@
+import { test, expect, beforeEach, afterEach } from 'bun:test'
+import { mkdtemp, rm, mkdir, writeFile } from 'fs/promises'
+import { join } from 'path'
+import { startRelayServer } from '../server'
+import { writeRegistry } from '../../registry/index'
+import { itemDir } from '../../paths'
+import type { InstalledItem } from '@aas/types'
+
+let aasHome: string
+let stop: () => void
+
+beforeEach(async () => {
+  aasHome = await mkdtemp('/tmp/aas-relay-test-')
+})
+
+afterEach(async () => {
+  stop?.()
+  await rm(aasHome, { recursive: true, force: true })
+})
+
+async function installProvider(slug: string, enabledFor: Record<string, boolean>, config: Record<string, unknown>) {
+  const entry: InstalledItem = {
+    slug, category: 'provider', version: '1.0.0',
+    installedAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z',
+    compatibleWith: ['claude', 'codex'], enabledFor,
+  }
+  await writeRegistry(aasHome, { installed: [entry] })
+  const dir = itemDir(aasHome, 'provider', slug)
+  await mkdir(dir, { recursive: true })
+  await writeFile(join(dir, 'config.json'), JSON.stringify(config))
+}
+
+test('forwards to the active claude provider', async () => {
+  await installProvider('test-provider', { claude: true }, { apiKey: 'sk-test', baseUrl: 'https://upstream.example.com' })
+
+  let capturedUrl: string | undefined
+  const fetchImpl = (async (url: string) => {
+    capturedUrl = url
+    return new Response(JSON.stringify({ reply: 'ok' }), { status: 200 })
+  }) as typeof fetch
+
+  const server = startRelayServer({ aasHome, port: 0, fetchImpl })
+  stop = server.stop
+
+  const res = await fetch(`http://127.0.0.1:${server.port}/v1/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ model: 'claude-3-5-sonnet' }),
+  })
+
+  expect(res.status).toBe(200)
+  expect(await res.json()).toEqual({ reply: 'ok' })
+  expect(capturedUrl).toBe('https://upstream.example.com/v1/messages')
+})
+
+test('returns 503 when no provider is enabled for the target', async () => {
+  await installProvider('test-provider', { claude: false }, { apiKey: 'sk-test', baseUrl: 'https://upstream.example.com' })
+
+  const server = startRelayServer({ aasHome, port: 0 })
+  stop = server.stop
+
+  const res = await fetch(`http://127.0.0.1:${server.port}/v1/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ model: 'claude-3-5-sonnet' }),
+  })
+
+  expect(res.status).toBe(503)
+})
+
+test('switching which provider is enabled changes routing on the next request, no restart needed', async () => {
+  await installProvider('provider-a', { claude: true }, { apiKey: 'key-a', baseUrl: 'https://a.example.com' })
+
+  const capturedUrls: string[] = []
+  const fetchImpl = (async (url: string) => {
+    capturedUrls.push(url)
+    return new Response('{}', { status: 200 })
+  }) as typeof fetch
+
+  const server = startRelayServer({ aasHome, port: 0, fetchImpl })
+  stop = server.stop
+
+  await fetch(`http://127.0.0.1:${server.port}/v1/messages`, { method: 'POST', body: '{}' })
+
+  // Switch the active provider without restarting the relay.
+  await installProvider('provider-b', { claude: true }, { apiKey: 'key-b', baseUrl: 'https://b.example.com' })
+
+  await fetch(`http://127.0.0.1:${server.port}/v1/messages`, { method: 'POST', body: '{}' })
+
+  expect(capturedUrls).toEqual(['https://a.example.com/v1/messages', 'https://b.example.com/v1/messages'])
+})
+
+test('routes /responses to the codex target', async () => {
+  await installProvider('test-provider', { codex: true }, { apiKey: 'sk-test', baseUrl: 'https://upstream.example.com' })
+
+  let capturedUrl: string | undefined
+  const fetchImpl = (async (url: string) => {
+    capturedUrl = url
+    return new Response('{}', { status: 200 })
+  }) as typeof fetch
+
+  const server = startRelayServer({ aasHome, port: 0, fetchImpl })
+  stop = server.stop
+
+  await fetch(`http://127.0.0.1:${server.port}/responses`, { method: 'POST', body: '{}' })
+  expect(capturedUrl).toBe('https://upstream.example.com/responses')
+})
