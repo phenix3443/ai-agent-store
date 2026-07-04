@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 
 export type AgentApp = 'claude' | 'codex'
-export type NavView = 'browse' | 'updates'
+export type NavView = 'browse' | 'overview' | 'local-relay'
 export type CategoryFilter = 'all' | 'provider' | 'skill' | 'mcp'
 export type ListFilter = 'all' | 'popular' | 'recent' | 'installed' | 'enabled' | 'disabled' | 'favorites' | 'updates'
 
@@ -28,7 +28,7 @@ const AppStateContext = createContext<AppStateValue | null>(null)
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [agentApp, setAgentApp] = useState<AgentApp>('claude')
-  const [navView, setNavView] = useState<NavView>('browse')
+  const [navView, setNavView] = useState<NavView>('overview')
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
   const [listFilter, setListFilter] = useState<ListFilter>('all')
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)

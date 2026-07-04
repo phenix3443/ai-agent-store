@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Compass, LayoutGrid, ArrowLeftRight, Sparkles, Boxes, Settings } from 'lucide-react'
+import { Compass, LayoutDashboard, LayoutGrid, ArrowLeftRight, Sparkles, Boxes, Settings } from 'lucide-react'
 import { useAppState, type CategoryFilter } from '../state/AppState'
 import { SettingsModal } from './SettingsModal'
 
@@ -22,6 +22,14 @@ export function IconRail() {
 
   return (
     <aside className="flex w-14 shrink-0 flex-col items-center gap-2 border-r border-store-border bg-store-sidebar py-4">
+      <button
+        type="button"
+        aria-label="概览"
+        onClick={() => setNavView('overview')}
+        className={railButtonClass(navView === 'overview')}
+      >
+        <LayoutDashboard size={18} />
+      </button>
       <button
         type="button"
         aria-label="浏览商店"

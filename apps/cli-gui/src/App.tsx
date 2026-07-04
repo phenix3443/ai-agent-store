@@ -1,4 +1,4 @@
-import { AppStateProvider } from './state/AppState'
+import { AppStateProvider, useAppState } from './state/AppState'
 import { TerminalLogProvider } from './state/TerminalLog'
 import { TitleBar } from './components/TitleBar'
 import { IconRail } from './components/IconRail'
@@ -6,6 +6,21 @@ import { ResourceList } from './components/ResourceList'
 import { DetailPanel } from './components/DetailPanel'
 import { InfoSidebar } from './components/InfoSidebar'
 import { TerminalPane } from './components/TerminalPane'
+import { Overview } from './components/Overview'
+
+function MainArea() {
+  const { navView } = useAppState()
+
+  if (navView === 'overview') return <Overview />
+
+  return (
+    <>
+      <ResourceList />
+      <DetailPanel />
+      <InfoSidebar />
+    </>
+  )
+}
 
 export function App() {
   return (
@@ -15,9 +30,7 @@ export function App() {
           <TitleBar />
           <div className="flex flex-1 overflow-hidden">
             <IconRail />
-            <ResourceList />
-            <DetailPanel />
-            <InfoSidebar />
+            <MainArea />
           </div>
           <TerminalPane />
         </div>

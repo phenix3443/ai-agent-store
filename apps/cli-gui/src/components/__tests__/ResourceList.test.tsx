@@ -1,6 +1,7 @@
 import { test, expect, afterEach, mock, spyOn } from 'bun:test'
+import { useEffect } from 'react'
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
-import { AppStateProvider } from '../../state/AppState'
+import { AppStateProvider, useAppState } from '../../state/AppState'
 import { TerminalLogProvider, useTerminalLog } from '../../state/TerminalLog'
 import * as rpcModule from '../../lib/rpc'
 import { ResourceList } from '../ResourceList'
@@ -61,13 +62,25 @@ function TerminalProbe() {
   return <div data-testid="log-count">{lines.length}</div>
 }
 
+// ResourceList only renders its sections when navView is 'browse'; force it
+// since these tests exercise ResourceList in isolation, outside of App/MainArea.
+function ForceBrowseNav({ children }: { children: React.ReactNode }) {
+  const { navView, setNavView } = useAppState()
+  useEffect(() => {
+    if (navView !== 'browse') setNavView('browse')
+  }, [navView, setNavView])
+  return <>{children}</>
+}
+
 async function renderList(handlers?: Record<string, (...args: unknown[]) => unknown>) {
   mockRpc(defaultHandlers(handlers))
   return render(
     <AppStateProvider>
       <TerminalLogProvider>
-        <ResourceList />
-        <TerminalProbe />
+        <ForceBrowseNav>
+          <ResourceList />
+          <TerminalProbe />
+        </ForceBrowseNav>
       </TerminalLogProvider>
     </AppStateProvider>
   )

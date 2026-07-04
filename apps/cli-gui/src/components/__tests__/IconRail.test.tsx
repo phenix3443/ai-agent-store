@@ -19,23 +19,31 @@ function renderIconRail() {
   )
 }
 
-test('defaults to browse nav and all category', () => {
+test('defaults to overview nav and all category', () => {
   renderIconRail()
-  expect(screen.getByTestId('probe').textContent).toBe('browse:all')
+  expect(screen.getByTestId('probe').textContent).toBe('overview:all')
 })
 
-test('clicking 浏览商店 keeps nav view on browse', () => {
+test('clicking 浏览商店 switches nav view to browse', () => {
   renderIconRail()
   fireEvent.click(screen.getByLabelText('浏览商店'))
   expect(screen.getByTestId('probe').textContent).toBe('browse:all')
 })
 
+test('clicking 概览 switches nav view back to overview', () => {
+  renderIconRail()
+  fireEvent.click(screen.getByLabelText('浏览商店'))
+  expect(screen.getByTestId('probe').textContent).toBe('browse:all')
+  fireEvent.click(screen.getByLabelText('概览'))
+  expect(screen.getByTestId('probe').textContent).toBe('overview:all')
+})
+
 test('clicking a category icon sets categoryFilter', () => {
   renderIconRail()
   fireEvent.click(screen.getByLabelText('供应商'))
-  expect(screen.getByTestId('probe').textContent).toBe('browse:provider')
+  expect(screen.getByTestId('probe').textContent).toBe('overview:provider')
   fireEvent.click(screen.getByLabelText('全部'))
-  expect(screen.getByTestId('probe').textContent).toBe('browse:all')
+  expect(screen.getByTestId('probe').textContent).toBe('overview:all')
 })
 
 test('clicking 设置 opens the settings modal', () => {

@@ -5,19 +5,39 @@ import { App } from '../App'
 
 afterEach(() => { cleanup(); mock.restore() })
 
-test('renders the icon rail, resource list, empty detail state, and collapsed terminal', async () => {
+function mockAllRpcs() {
   spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string) => {
     if (method === 'list') return []
     if (method === 'search') return []
+    if (method === 'getUsageSummary') return []
+    if (method === 'getRelayStatus') return { running: false }
+    if (method === 'listLocalConfigs') return []
+    if (method === 'getRecentRequests') return []
     if (method === 'checkUpdates') return []
     throw new Error(`unexpected RPC in smoke test: ${method}`)
   }) as typeof rpcModule.callRpc)
+}
+
+test('renders the icon rail and the Overview dashboard by default', async () => {
+  mockAllRpcs()
 
   render(<App />)
 
+  expect(screen.getByLabelText('概览')).toBeInTheDocument()
   expect(screen.getByLabelText('浏览商店')).toBeInTheDocument()
-  expect(screen.getByPlaceholderText('搜索，或用 @ 过滤…')).toBeInTheDocument()
-  expect(screen.getByText('从左侧选择一个资源查看详情')).toBeInTheDocument()
+  expect(await screen.findByText('概览')).toBeInTheDocument()
+  expect(await screen.findByText('供应商')).toBeInTheDocument()
   expect(screen.getByLabelText('展开终端')).toBeInTheDocument()
-  expect(screen.queryByText('浏览')).not.toBeInTheDocument()
+})
+
+test('clicking 浏览商店 switches to the browse three-pane layout', async () => {
+  mockAllRpcs()
+
+  render(<App />)
+
+  await screen.findByText('供应商')
+  screen.getByLabelText('浏览商店').click()
+
+  expect(await screen.findByPlaceholderText('搜索，或用 @ 过滤…')).toBeInTheDocument()
+  expect(screen.getByText('从左侧选择一个资源查看详情')).toBeInTheDocument()
 })
