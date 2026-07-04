@@ -1,4 +1,4 @@
-import type { AASEngine, ListOptions, SearchOptions, ToolTarget } from '@aas/types'
+import type { AASEngine, ListOptions, SearchOptions, ToolTarget, UsageSummaryOptions } from '@aas/types'
 
 type RpcHandler = (engine: AASEngine, args: unknown[]) => Promise<unknown>
 
@@ -16,6 +16,8 @@ const RPC_METHODS: Record<string, RpcHandler> = {
   list: (e, a) => e.list(a[0] as ListOptions | undefined),
   info: (e, a) => e.info(a[0] as string),
   duplicateProvider: (e, a) => e.duplicateProvider(a[0] as string),
+  getUsageSummary: (e, a) => e.getUsageSummary(a[0] as UsageSummaryOptions | undefined),
+  parsePricingFromUrl: (e, a) => e.parsePricingFromUrl(a[0] as string),
 }
 
 export async function runRpc(

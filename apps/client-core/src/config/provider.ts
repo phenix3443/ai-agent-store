@@ -1,14 +1,10 @@
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
+import type { ModelPricing } from '@aas/types'
+
+export type { ModelPricing } from '@aas/types'
 
 export type ProviderAuthType = 'bearer' | 'anthropic' | { header: string }
-
-export interface ModelPricing {
-  input: number
-  output: number
-  cacheRead?: number
-  cacheWrite?: number
-}
 
 export interface ProviderConnection {
   apiKey?: string

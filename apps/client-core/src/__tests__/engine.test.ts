@@ -480,3 +480,41 @@ test('duplicateProvider: throws for a non-provider item', async () => {
 test('duplicateProvider: throws when the slug is not installed', async () => {
   await expect(engine.duplicateProvider('missing')).rejects.toThrow('Item not installed')
 })
+
+test('getUsageSummary: returns rows recorded via the usage logger for this aasHome', async () => {
+  const { openUsageDb } = await import('../usage/db')
+  const { recordRequest } = await import('../usage/logger')
+  const db = openUsageDb(aasHome)
+  recordRequest(db, {
+    providerSlug: 'yls', target: 'claude', model: 'claude-sonnet-4-5',
+    usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    costUsd: 0.01, statusCode: 200, latencyMs: 100, isStreaming: false,
+  })
+
+  const rows = await engine.getUsageSummary()
+  expect(rows).toHaveLength(1)
+  expect(rows[0].providerSlug).toBe('yls')
+})
+
+test('getUsageSummary: forwards the target filter through to the query', async () => {
+  const { openUsageDb } = await import('../usage/db')
+  const { recordRequest } = await import('../usage/logger')
+  const db = openUsageDb(aasHome)
+  recordRequest(db, {
+    providerSlug: 'yls', target: 'claude', model: 'claude-sonnet-4-5',
+    usage: { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    costUsd: 0.01, statusCode: 200, latencyMs: 100, isStreaming: false,
+  })
+
+  const rows = await engine.getUsageSummary({ target: 'codex' })
+  expect(rows).toHaveLength(0)
+})
+
+test('parsePricingFromUrl: returns a non-empty mock pricing table', async () => {
+  const pricing = await engine.parsePricingFromUrl('https://example.com/pricing')
+  expect(Object.keys(pricing).length).toBeGreaterThan(0)
+  for (const entry of Object.values(pricing)) {
+    expect(typeof entry.input).toBe('number')
+    expect(typeof entry.output).toBe('number')
+  }
+})

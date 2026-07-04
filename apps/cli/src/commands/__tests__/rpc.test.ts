@@ -19,6 +19,8 @@ function makeEngine(overrides?: Partial<AASEngine>): AASEngine {
       throw new Error('not installed')
     },
     duplicateProvider: async () => ({ newSlug: 'openai-provider-copy' }),
+    getUsageSummary: async () => [],
+    parsePricingFromUrl: async () => ({}),
     ...overrides,
   } as unknown as AASEngine
 }
@@ -90,4 +92,13 @@ test('runRpc calls duplicateProvider with the slug and returns the new slug', as
   const parsed = JSON.parse(lines[0])
   expect(parsed.ok).toBe(true)
   expect(parsed.data.newSlug).toBe('openai-provider-copy')
+})
+
+test('runRpc calls getUsageSummary and returns its rows', async () => {
+  const rows = [{ date: '2026-07-05', providerSlug: 'yls', target: 'claude', model: 'claude-sonnet-4-5', requestCount: 3, successCount: 3, unpricedRequestCount: 0, inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0, costUsd: 0.01 }]
+  const getUsageSummary = async () => rows
+  const lines: string[] = []
+  const code = await runRpc(makeEngine({ getUsageSummary: getUsageSummary as AASEngine['getUsageSummary'] }), ['getUsageSummary', '[]'], s => lines.push(s))
+  expect(code).toBe(0)
+  expect(JSON.parse(lines[0]).data).toEqual(rows)
 })

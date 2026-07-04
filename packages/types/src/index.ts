@@ -12,5 +12,8 @@ export type {
   InstalledItem,
   ItemDetail,
   AASEngine,
+  ModelPricing,
+  UsageSummaryRow,
+  UsageSummaryOptions,
 } from './engine'
 export type { RegistryJson } from './registry'

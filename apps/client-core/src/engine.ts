@@ -3,6 +3,7 @@ import { join } from 'path'
 import type {
   AASEngine, AASPaths, InstallResult, SyncResult, UpdateAvailable, UpdateResult,
   ListOptions, InstalledItem, ItemDetail, ToolTarget, SearchOptions, Item, JsonSchema,
+  UsageSummaryRow, UsageSummaryOptions, ModelPricing,
 } from '@aas/types'
 import { AASClient } from '@aas/sdk'
 import { resolvePaths, itemDir } from './paths'
@@ -19,6 +20,7 @@ import {
 } from './config/codex'
 import { checkUpdates as _checkUpdates, applyUpdate } from './updater/index'
 import { duplicateProviderConnection, readProviderConnection } from './config/provider'
+import { getDailySummary } from './usage/queries'
 
 export class AASEngineImpl implements AASEngine {
   private readonly paths: Required<AASPaths>
@@ -282,6 +284,16 @@ export class AASEngineImpl implements AASEngine {
     }
     await writeRegistry(this.paths.aasHome, upsertEntry(registry, newEntry))
     return { newSlug }
+  }
+
+  async getUsageSummary(options?: UsageSummaryOptions): Promise<UsageSummaryRow[]> {
+    return getDailySummary(this.paths.aasHome, options)
+  }
+
+  async parsePricingFromUrl(_url: string): Promise<Record<string, ModelPricing>> {
+    return {
+      'example-model': { input: 1, output: 5 },
+    }
   }
 
   private async _syncToTarget(

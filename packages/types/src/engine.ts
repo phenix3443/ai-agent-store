@@ -52,6 +52,34 @@ export interface ListOptions {
   enabledFor?: ToolTarget
 }
 
+export interface ModelPricing {
+  input: number
+  output: number
+  cacheRead?: number
+  cacheWrite?: number
+}
+
+export interface UsageSummaryRow {
+  date: string
+  providerSlug: string
+  target: string
+  model: string
+  requestCount: number
+  successCount: number
+  unpricedRequestCount: number
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  costUsd: number
+}
+
+export interface UsageSummaryOptions {
+  days?: number
+  providerSlug?: string
+  target?: ToolTarget
+}
+
 /** A registry entry — shape stored in ~/.agents/registry.json and returned by AASEngine.list() */
 export interface InstalledItem {
   slug: string
@@ -129,4 +157,8 @@ export interface AASEngine {
   info(slug: string): Promise<ItemDetail>
   /** Duplicates an installed provider's local config into a new slug. Throws if slug is not an installed provider. */
   duplicateProvider(slug: string): Promise<{ newSlug: string }>
+  /** Returns daily usage/cost rollups, optionally filtered by provider or target. */
+  getUsageSummary(options?: UsageSummaryOptions): Promise<UsageSummaryRow[]>
+  /** Fetches a provider's pricing page and extracts a draft pricing table for user review. Returns mock data in this iteration. */
+  parsePricingFromUrl(url: string): Promise<Record<string, ModelPricing>>
 }
