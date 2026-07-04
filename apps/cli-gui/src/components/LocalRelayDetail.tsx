@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { LocalRelayConfig, RelayStatus } from '@aas/types'
 import { callRpc } from '../lib/rpc'
+import { ProxyLogModal } from './ProxyLogModal'
 
 export function LocalRelayDetail() {
   const [configs, setConfigs] = useState<LocalRelayConfig[]>([])
   const [status, setStatus] = useState<RelayStatus>({ running: false })
+  const [logModalOpen, setLogModalOpen] = useState(false)
 
   async function refresh() {
     setConfigs(await callRpc<LocalRelayConfig[]>('listLocalConfigs'))
@@ -45,13 +47,22 @@ export function LocalRelayDetail() {
     <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-store-text">本地代理</h1>
-        <button
-          type="button"
-          onClick={addConfig}
-          className="rounded-md bg-store-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
-        >
-          新增配置
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setLogModalOpen(true)}
+            className="rounded-md border border-store-border-strong px-3 py-1.5 text-xs font-medium text-store-text"
+          >
+            查看代理日志
+          </button>
+          <button
+            type="button"
+            onClick={addConfig}
+            className="rounded-md bg-store-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+          >
+            新增配置
+          </button>
+        </div>
       </div>
 
       <p className="text-xs text-store-text-2">
@@ -93,6 +104,8 @@ export function LocalRelayDetail() {
           </div>
         ))}
       </div>
+
+      <ProxyLogModal open={logModalOpen} onOpenChange={setLogModalOpen} />
     </div>
   )
 }

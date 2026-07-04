@@ -76,3 +76,24 @@ test('shows a local relay status card that navigates to the local-relay view on 
   // an App.tsx-level test instead. Import `fireEvent` from '@testing-library/react' at the top of this
   // file if not already imported.
 })
+
+test('shows the 5 most recent requests and opens the proxy log modal from 查看全部', async () => {
+  spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string) => {
+    if (method === 'list') return []
+    if (method === 'getUsageSummary') return []
+    if (method === 'getRelayStatus') return { running: false }
+    if (method === 'listLocalConfigs') return []
+    if (method === 'getRecentRequests') {
+      return [{ id: 1, createdAt: '2026-07-05T00:00:00Z', providerSlug: 'p1', target: 'claude', model: 'm1', inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0, costUsd: 0.001, statusCode: 200, latencyMs: 100, isStreaming: false, isFallback: false }]
+    }
+    if (method === 'checkUpdates') return []
+    throw new Error(`unexpected RPC in Overview test: ${method}`)
+  }) as typeof rpcModule.callRpc)
+
+  render(<AppStateProvider><Overview /></AppStateProvider>)
+
+  expect(await screen.findByText('最近请求')).toBeInTheDocument()
+  expect(await screen.findByText('p1')).toBeInTheDocument()
+  fireEvent.click(screen.getByText('查看全部'))
+  expect(await screen.findByText('代理请求日志')).toBeInTheDocument()
+})

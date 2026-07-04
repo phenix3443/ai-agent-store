@@ -12,6 +12,7 @@ function mockRpc(overrides: Record<string, (args?: unknown[]) => unknown> = {}) 
     if (overrides[method]) return overrides[method](args)
     if (method === 'listLocalConfigs') return configs
     if (method === 'getRelayStatus') return { running: true, pid: 123 }
+    if (method === 'getRecentRequests') return []
     throw new Error(`unexpected RPC in LocalRelayDetail test: ${method}`)
   }) as typeof rpcModule.callRpc)
 }
@@ -60,4 +61,12 @@ test('removing a config calls removeLocalConfig', async () => {
   const removeButtons = screen.getAllByRole('button', { name: '删除' })
   fireEvent.click(removeButtons[removeButtons.length - 1]!)
   await waitFor(() => expect(removedId).toBe('extra'))
+})
+
+test('clicking 查看代理日志 opens the proxy log modal', async () => {
+  mockRpc()
+  render(<LocalRelayDetail />)
+  await screen.findByDisplayValue('默认')
+  fireEvent.click(screen.getByRole('button', { name: '查看代理日志' }))
+  expect(await screen.findByText('代理请求日志')).toBeInTheDocument()
 })

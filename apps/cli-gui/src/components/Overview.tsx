@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import type { InstalledItem, LocalRelayConfig, RelayStatus, UsageSummaryRow } from '@aas/types'
+import type { InstalledItem, LocalRelayConfig, RecentRequestRow, RelayStatus, UsageSummaryRow } from '@aas/types'
 import { callRpc } from '../lib/rpc'
 import { useAppState } from '../state/AppState'
+import { ProxyLogModal } from './ProxyLogModal'
 import { UsageTrendChart } from './UsageTrendChart'
 
 const CATEGORY_CARDS: { category: InstalledItem['category']; label: string }[] = [
@@ -18,6 +19,8 @@ export function Overview() {
   const [last30Days, setLast30Days] = useState<UsageSummaryRow[]>([])
   const [relayStatus, setRelayStatus] = useState<RelayStatus>({ running: false })
   const [localConfigs, setLocalConfigs] = useState<LocalRelayConfig[]>([])
+  const [recentRequests, setRecentRequests] = useState<RecentRequestRow[]>([])
+  const [logModalOpen, setLogModalOpen] = useState(false)
 
   useEffect(() => {
     callRpc<InstalledItem[]>('list').then(setInstalled)
@@ -32,6 +35,10 @@ export function Overview() {
   useEffect(() => {
     callRpc<RelayStatus>('getRelayStatus').then(setRelayStatus)
     callRpc<LocalRelayConfig[]>('listLocalConfigs').then(setLocalConfigs)
+  }, [])
+
+  useEffect(() => {
+    callRpc<RecentRequestRow[]>('getRecentRequests', [{ limit: 5 }]).then(setRecentRequests)
   }, [])
 
   function summarize(rows: UsageSummaryRow[]) {
@@ -101,6 +108,28 @@ export function Overview() {
           {relayStatus.running ? `运行中 · ${localConfigs.length} 个监听配置` : '未运行'}
         </p>
       </button>
+
+      <div className="rounded-xl border border-store-border bg-store-panel p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-sm font-medium text-store-text">最近请求</p>
+          <button type="button" onClick={() => setLogModalOpen(true)} className="text-xs text-store-accent hover:opacity-80">
+            查看全部
+          </button>
+        </div>
+        <div className="flex flex-col gap-1">
+          {recentRequests.map((row) => (
+            <div key={row.id} className="flex items-center justify-between text-xs text-store-text-2">
+              <span>{row.target} · {row.model}</span>
+              <span>
+                {row.providerSlug}
+                {row.isFallback ? '（降级）' : ''}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <ProxyLogModal open={logModalOpen} onOpenChange={setLogModalOpen} />
     </div>
   )
 }
