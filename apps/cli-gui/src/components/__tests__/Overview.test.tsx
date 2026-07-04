@@ -97,3 +97,22 @@ test('shows the 5 most recent requests and opens the proxy log modal from 查看
   fireEvent.click(screen.getByText('查看全部'))
   expect(await screen.findByText('代理请求日志')).toBeInTheDocument()
 })
+
+test('shows up to 4 updatable packages with a real 更新 button', async () => {
+  spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string, args?: unknown[]) => {
+    if (method === 'list') return []
+    if (method === 'getUsageSummary') return []
+    if (method === 'getRelayStatus') return { running: false }
+    if (method === 'listLocalConfigs') return []
+    if (method === 'getRecentRequests') return []
+    if (method === 'checkUpdates') return [{ slug: 'a', currentVersion: '1.0.0', latestVersion: '1.1.0' }]
+    if (method === 'update') return [{ slug: args?.[0] as string, fromVersion: '1.0.0', toVersion: '1.1.0' }]
+    throw new Error(`unexpected RPC in Overview test: ${method}`)
+  }) as typeof rpcModule.callRpc)
+
+  render(<AppStateProvider><Overview /></AppStateProvider>)
+
+  expect(await screen.findByText('可更新')).toBeInTheDocument()
+  expect(await screen.findByText(/a.*1\.0\.0.*1\.1\.0/)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: '更新' }))
+})

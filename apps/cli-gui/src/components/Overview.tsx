@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { InstalledItem, LocalRelayConfig, RecentRequestRow, RelayStatus, UsageSummaryRow } from '@aas/types'
+import type { InstalledItem, LocalRelayConfig, RecentRequestRow, RelayStatus, UpdateAvailable, UsageSummaryRow } from '@aas/types'
 import { callRpc } from '../lib/rpc'
 import { useAppState } from '../state/AppState'
 import { ProxyLogModal } from './ProxyLogModal'
@@ -21,6 +21,7 @@ export function Overview() {
   const [localConfigs, setLocalConfigs] = useState<LocalRelayConfig[]>([])
   const [recentRequests, setRecentRequests] = useState<RecentRequestRow[]>([])
   const [logModalOpen, setLogModalOpen] = useState(false)
+  const [updates, setUpdates] = useState<UpdateAvailable[]>([])
 
   useEffect(() => {
     callRpc<InstalledItem[]>('list').then(setInstalled)
@@ -41,6 +42,10 @@ export function Overview() {
     callRpc<RecentRequestRow[]>('getRecentRequests', [{ limit: 5 }]).then(setRecentRequests)
   }, [])
 
+  useEffect(() => {
+    callRpc<UpdateAvailable[]>('checkUpdates').then(setUpdates)
+  }, [])
+
   function summarize(rows: UsageSummaryRow[]) {
     return rows.reduce(
       (acc, r) => ({
@@ -54,6 +59,11 @@ export function Overview() {
   function goToCategory(category: InstalledItem['category']) {
     setCategoryFilter(category)
     setNavView('browse')
+  }
+
+  async function updateOne(slug: string) {
+    await callRpc('update', [slug])
+    callRpc<UpdateAvailable[]>('checkUpdates').then(setUpdates)
   }
 
   return (
@@ -130,6 +140,28 @@ export function Overview() {
       </div>
 
       <ProxyLogModal open={logModalOpen} onOpenChange={setLogModalOpen} />
+
+      {updates.length > 0 && (
+        <div className="rounded-xl border border-store-border bg-store-panel p-4">
+          <p className="mb-2 text-sm font-medium text-store-text">可更新</p>
+          <div className="flex flex-col gap-1">
+            {updates.slice(0, 4).map((item) => (
+              <div key={item.slug} className="flex items-center justify-between text-xs">
+                <span className="text-store-text">
+                  {item.slug} v{item.currentVersion} → v{item.latestVersion}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => updateOne(item.slug)}
+                  className="rounded-md bg-store-accent px-2 py-1 text-xs font-medium text-white hover:opacity-90"
+                >
+                  更新
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
