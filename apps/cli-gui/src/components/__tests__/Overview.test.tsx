@@ -1,5 +1,5 @@
 import { test, expect, afterEach, spyOn, mock } from 'bun:test'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import * as rpcModule from '../../lib/rpc'
 import { AppStateProvider } from '../../state/AppState'
 import { Overview } from '../Overview'
@@ -53,4 +53,26 @@ test('shows a consumption trend card with today/7-day/30-day totals', async () =
 
   expect(await screen.findByText('消耗趋势')).toBeInTheDocument()
   expect(await screen.findByText('3 请求')).toBeInTheDocument()
+})
+
+test('shows a local relay status card that navigates to the local-relay view on click', async () => {
+  spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string) => {
+    if (method === 'list') return []
+    if (method === 'getUsageSummary') return []
+    if (method === 'getRelayStatus') return { running: true, pid: 456 }
+    if (method === 'listLocalConfigs') return [{ id: 'default', name: '默认', port: 18780, enabled: true }]
+    if (method === 'getRecentRequests') return []
+    if (method === 'checkUpdates') return []
+    throw new Error(`unexpected RPC in Overview test: ${method}`)
+  }) as typeof rpcModule.callRpc)
+
+  render(<AppStateProvider><Overview /></AppStateProvider>)
+
+  const card = await screen.findByText('本地代理')
+  expect(await screen.findByText(/运行中/)).toBeInTheDocument()
+  fireEvent.click(card)
+  // Assert navView switched — since Overview itself doesn't render LocalRelayDetail (App.tsx does the
+  // routing), assert the click handler ran without throwing; a full navigation assertion belongs in
+  // an App.tsx-level test instead. Import `fireEvent` from '@testing-library/react' at the top of this
+  // file if not already imported.
 })

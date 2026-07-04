@@ -7,11 +7,13 @@ import { DetailPanel } from './components/DetailPanel'
 import { InfoSidebar } from './components/InfoSidebar'
 import { TerminalPane } from './components/TerminalPane'
 import { Overview } from './components/Overview'
+import { LocalRelayDetail } from './components/LocalRelayDetail'
 
 function MainArea() {
   const { navView } = useAppState()
 
   if (navView === 'overview') return <Overview />
+  if (navView === 'local-relay') return <LocalRelayDetail />
 
   return (
     <>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { InstalledItem, UsageSummaryRow } from '@aas/types'
+import type { InstalledItem, LocalRelayConfig, RelayStatus, UsageSummaryRow } from '@aas/types'
 import { callRpc } from '../lib/rpc'
 import { useAppState } from '../state/AppState'
 import { UsageTrendChart } from './UsageTrendChart'
@@ -16,6 +16,8 @@ export function Overview() {
   const [today, setToday] = useState<UsageSummaryRow[]>([])
   const [last7Days, setLast7Days] = useState<UsageSummaryRow[]>([])
   const [last30Days, setLast30Days] = useState<UsageSummaryRow[]>([])
+  const [relayStatus, setRelayStatus] = useState<RelayStatus>({ running: false })
+  const [localConfigs, setLocalConfigs] = useState<LocalRelayConfig[]>([])
 
   useEffect(() => {
     callRpc<InstalledItem[]>('list').then(setInstalled)
@@ -25,6 +27,11 @@ export function Overview() {
     callRpc<UsageSummaryRow[]>('getUsageSummary', [{ days: 1 }]).then(setToday)
     callRpc<UsageSummaryRow[]>('getUsageSummary', [{ days: 7 }]).then(setLast7Days)
     callRpc<UsageSummaryRow[]>('getUsageSummary', [{ days: 30 }]).then(setLast30Days)
+  }, [])
+
+  useEffect(() => {
+    callRpc<RelayStatus>('getRelayStatus').then(setRelayStatus)
+    callRpc<LocalRelayConfig[]>('listLocalConfigs').then(setLocalConfigs)
   }, [])
 
   function summarize(rows: UsageSummaryRow[]) {
@@ -83,6 +90,17 @@ export function Overview() {
         </div>
         <UsageTrendChart rows={last7Days} />
       </div>
+
+      <button
+        type="button"
+        onClick={() => setNavView('local-relay')}
+        className="flex flex-col items-start gap-1 rounded-xl border border-store-border bg-store-panel p-4 text-left hover:border-store-border-strong"
+      >
+        <p className="text-sm font-medium text-store-text">本地代理</p>
+        <p className="text-xs text-store-text-2">
+          {relayStatus.running ? `运行中 · ${localConfigs.length} 个监听配置` : '未运行'}
+        </p>
+      </button>
     </div>
   )
 }
