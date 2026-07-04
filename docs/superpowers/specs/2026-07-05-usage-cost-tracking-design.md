@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS request_logs (
   cost_usd REAL,
   status_code INTEGER NOT NULL,
   latency_ms INTEGER NOT NULL,
-  is_streaming INTEGER NOT NULL
+  is_streaming INTEGER NOT NULL,
+  is_fallback INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS daily_rollups (
@@ -125,18 +126,19 @@ aas usage [--days N] [--provider <slug>] [--for <claude|codex>]
 
 默认 `--days 30`，从 `daily_rollups` 按条件过滤+汇总，输出表格：日期/供应商/模型/请求数/成功率/Tokens/花费（未定价的行花费列显示"—"而不是 `$0.00`）。
 
-### GUI（`apps/cli-gui`）
+### GUI RPC 与数据接口（本计划范围）
 
-- `AppState.navView` 新增 `'usage'`；`IconRail` 新增用量图标（bar-chart 一类），点击设为该值。
-- 新组件 `UsageDashboard.tsx`：`navView === 'usage'` 时替代 `ResourceList` 渲染，顶部卡片（近 30 天总花费/总请求数/成功率），下方按日期/供应商/模型的汇总表格，复用 `IconRail` 的分类筛选（按 provider 过滤）。
-- `ProviderEditModal.tsx` 新增"定价"分区：
-  - `pricingUrl` 输入框；当 `publisher.tier !== 'official'` 时标红星必填，未填不允许保存（表单层校验，不阻塞已有的 `setConfig` RPC 契约）。
-  - "解析定价"按钮：调用新 RPC `parsePricingFromUrl(pricingUrl)` → **本次返回 mock 数据**（固定返回一组标注"示例数据，请核对后保存"的占位定价行）→ 回填到下方可编辑的定价表单（复用 `modelMapping` 现有的"增加一行/删除一行"UI 模式）→ 用户确认/修改后随 `setConfig` 一并保存。
+本计划**只做数据层和 RPC**，不做 GUI 渲染——渲染消费方是仪表盘（见 `docs/superpowers/specs/2026-07-05-cli-client-full-fidelity-design.md`，该 spec 反向还原自实际设计稿后发现"用量"不是独立导航目的地，而是内嵌在"概览"仪表盘里，因此本 spec 里最初设想的独立 `用量` IconRail 图标 + `UsageDashboard.tsx` 已废弃，改为仪表盘直接调用下面的查询 RPC）：
+
+- 新 RPC `getUsageSummary({ days?, providerSlug?, target? })`：返回 `daily_rollups` 按条件过滤的汇总行数组，供仪表盘的"消耗趋势"卡片和 CLI `aas usage` 共用同一份查询逻辑（`apps/client-core/src/usage/queries.ts`）。
+- 新 RPC `parsePricingFromUrl(url)`：**本次返回 mock 数据**（固定返回一组标注"示例数据，请核对后保存"的占位定价行），真实的 LLM 抓取解析是独立后续任务。
+
+`ProviderEditModal.tsx` 的"定价"分区（`pricingUrl` 必填校验 + "解析定价"按钮 + 定价表单编辑）作为 UI 任务放在供应商编辑表单重构那个计划里实现（同样在 `2026-07-05-cli-client-full-fidelity-design.md`），因为那个计划本身就要重写整个 `ProviderEditModal.tsx`，避免两个计划抢改同一个文件。
 
 ## 测试与自测计划
 
 - 单元测试：`usage-parser.ts`（Claude 流式/非流式、OpenAI 流式/非流式四种组合的用量提取）、`pricing.ts`（成本计算，含未命中定价返回 `null` 的分支）、`db.ts` 的 rollup upsert 逻辑（累加正确性）、30 天清理的边界条件。
-- **必做的浏览器/真实环境自测**（按 `AGENTS.md` 的 UI sign-off 规则）：`make dev-gui` 实际跑一遍——用真实（或 mock 上游）relay 请求验证 usage.db 确实写入了明细和汇总行；GUI 用量面板与 CLI `aas usage` 输出的数字一致；`ProviderEditModal` 的定价表单能保存并在下次打开时正确回显。
+- **必做的真实环境自测**：`aas relay start` 后用真实 provider 转发几次请求，确认 `usage.db` 确实写入了明细和汇总行，`aas usage` 输出的数字与 `request_logs`/`daily_rollups` 里的原始数据吻合。GUI 层的自测（仪表盘展示、`ProviderEditModal` 定价表单）在消费这些 RPC 的那个计划里做。
 
 ## 不做的事（YAGNI）
 
