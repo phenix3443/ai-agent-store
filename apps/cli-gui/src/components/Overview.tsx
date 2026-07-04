@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import type { InstalledItem } from '@aas/types'
+import type { InstalledItem, UsageSummaryRow } from '@aas/types'
 import { callRpc } from '../lib/rpc'
 import { useAppState } from '../state/AppState'
+import { UsageTrendChart } from './UsageTrendChart'
 
 const CATEGORY_CARDS: { category: InstalledItem['category']; label: string }[] = [
   { category: 'provider', label: '供应商' },
@@ -12,10 +13,29 @@ const CATEGORY_CARDS: { category: InstalledItem['category']; label: string }[] =
 export function Overview() {
   const { setNavView, setCategoryFilter } = useAppState()
   const [installed, setInstalled] = useState<InstalledItem[]>([])
+  const [today, setToday] = useState<UsageSummaryRow[]>([])
+  const [last7Days, setLast7Days] = useState<UsageSummaryRow[]>([])
+  const [last30Days, setLast30Days] = useState<UsageSummaryRow[]>([])
 
   useEffect(() => {
     callRpc<InstalledItem[]>('list').then(setInstalled)
   }, [])
+
+  useEffect(() => {
+    callRpc<UsageSummaryRow[]>('getUsageSummary', [{ days: 1 }]).then(setToday)
+    callRpc<UsageSummaryRow[]>('getUsageSummary', [{ days: 7 }]).then(setLast7Days)
+    callRpc<UsageSummaryRow[]>('getUsageSummary', [{ days: 30 }]).then(setLast30Days)
+  }, [])
+
+  function summarize(rows: UsageSummaryRow[]) {
+    return rows.reduce(
+      (acc, r) => ({
+        requestCount: acc.requestCount + r.requestCount,
+        costUsd: acc.costUsd + r.costUsd,
+      }),
+      { requestCount: 0, costUsd: 0 }
+    )
+  }
 
   function goToCategory(category: InstalledItem['category']) {
     setCategoryFilter(category)
@@ -40,6 +60,28 @@ export function Overview() {
             </span>
           </button>
         ))}
+      </div>
+
+      <div className="rounded-xl border border-store-border bg-store-panel p-4">
+        <p className="mb-3 text-sm font-medium text-store-text">消耗趋势</p>
+        <div className="mb-4 grid grid-cols-3 gap-4 text-xs text-store-text-2">
+          <div>
+            <p>今日</p>
+            <p className="text-base font-semibold text-store-text">{summarize(today).requestCount} 请求</p>
+            <p>${summarize(today).costUsd.toFixed(4)}</p>
+          </div>
+          <div>
+            <p>近 7 天</p>
+            <p className="text-base font-semibold text-store-text">{summarize(last7Days).requestCount} 请求</p>
+            <p>${summarize(last7Days).costUsd.toFixed(4)}</p>
+          </div>
+          <div>
+            <p>近 30 天</p>
+            <p className="text-base font-semibold text-store-text">{summarize(last30Days).requestCount} 请求</p>
+            <p>${summarize(last30Days).costUsd.toFixed(4)}</p>
+          </div>
+        </div>
+        <UsageTrendChart rows={last7Days} />
       </div>
     </div>
   )

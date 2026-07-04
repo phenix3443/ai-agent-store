@@ -33,3 +33,24 @@ test('shows a count card per category from the list RPC', async () => {
   expect(await screen.findByText('技能')).toBeInTheDocument()
   expect(await screen.findByText('MCP')).toBeInTheDocument()
 })
+
+test('shows a consumption trend card with today/7-day/30-day totals', async () => {
+  spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string, args?: unknown[]) => {
+    if (method === 'list') return []
+    if (method === 'getUsageSummary') {
+      const days = (args?.[0] as { days?: number } | undefined)?.days
+      if (days === 1) return [{ date: '2026-07-05', providerSlug: 'p', target: 'claude', model: 'm', requestCount: 3, successCount: 3, unpricedRequestCount: 0, inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0, costUsd: 0.05 }]
+      return []
+    }
+    if (method === 'getRelayStatus') return { running: false }
+    if (method === 'listLocalConfigs') return []
+    if (method === 'getRecentRequests') return []
+    if (method === 'checkUpdates') return []
+    throw new Error(`unexpected RPC in Overview test: ${method}`)
+  }) as typeof rpcModule.callRpc)
+
+  render(<AppStateProvider><Overview /></AppStateProvider>)
+
+  expect(await screen.findByText('消耗趋势')).toBeInTheDocument()
+  expect(await screen.findByText('3 请求')).toBeInTheDocument()
+})
