@@ -9,6 +9,7 @@ test('renders the icon rail, resource list, empty detail state, and collapsed te
   spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string) => {
     if (method === 'list') return []
     if (method === 'search') return []
+    if (method === 'checkUpdates') return []
     throw new Error(`unexpected RPC in smoke test: ${method}`)
   }) as typeof rpcModule.callRpc)
 

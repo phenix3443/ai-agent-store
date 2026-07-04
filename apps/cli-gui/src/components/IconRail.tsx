@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Compass, RefreshCw, LayoutGrid, ArrowLeftRight, Sparkles, Boxes, Settings } from 'lucide-react'
+import { Compass, LayoutGrid, ArrowLeftRight, Sparkles, Boxes, Settings } from 'lucide-react'
 import { useAppState, type CategoryFilter } from '../state/AppState'
 import { SettingsModal } from './SettingsModal'
 
@@ -30,15 +30,6 @@ export function IconRail() {
       >
         <Compass size={18} />
       </button>
-      <button
-        type="button"
-        aria-label="更新"
-        onClick={() => setNavView('updates')}
-        className={railButtonClass(navView === 'updates')}
-      >
-        <RefreshCw size={18} />
-      </button>
-
       <div className="my-2 h-px w-8 bg-store-border" />
 
       {CATEGORY_ICONS.map(({ value, label, icon: Icon }) => (

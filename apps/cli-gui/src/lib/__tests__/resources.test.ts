@@ -71,6 +71,28 @@ test('filterInstalledByListFilter: "all" and other filters pass everything throu
   expect(filterInstalledByListFilter(enriched, 'popular', 'claude', new Set()).length).toBe(1)
 })
 
+test('filterInstalledByListFilter: "updates" filters to only slugs with an available update', () => {
+  const base = enrichInstalled(installedItem, itemDetail)
+  const items = [
+    { ...base, slug: 'a' },
+    { ...base, slug: 'b' },
+    { ...base, slug: 'c' },
+  ]
+  const updatableSlugs = new Set(['b'])
+
+  const result = filterInstalledByListFilter(items, 'updates', 'claude', new Set(), updatableSlugs)
+
+  expect(result.map((i) => i.slug)).toEqual(['b'])
+})
+
+test('filterInstalledByListFilter: "updates" with no available updates returns an empty array', () => {
+  const items = [{ ...enrichInstalled(installedItem, itemDetail), slug: 'a' }]
+
+  const result = filterInstalledByListFilter(items, 'updates', 'claude', new Set(), new Set())
+
+  expect(result).toEqual([])
+})
+
 test('filterRecommendedByListFilter: "popular" sorts by downloads descending', () => {
   const low: Item = { ...catalogItem, slug: 'low', downloads: 10 }
   const high: Item = { ...catalogItem, slug: 'high', downloads: 999 }

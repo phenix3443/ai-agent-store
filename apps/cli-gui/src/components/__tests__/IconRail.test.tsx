@@ -24,15 +24,8 @@ test('defaults to browse nav and all category', () => {
   expect(screen.getByTestId('probe').textContent).toBe('browse:all')
 })
 
-test('clicking 更新 switches nav view to updates', () => {
+test('clicking 浏览商店 keeps nav view on browse', () => {
   renderIconRail()
-  fireEvent.click(screen.getByLabelText('更新'))
-  expect(screen.getByTestId('probe').textContent).toBe('updates:all')
-})
-
-test('clicking 浏览商店 switches nav view back to browse', () => {
-  renderIconRail()
-  fireEvent.click(screen.getByLabelText('更新'))
   fireEvent.click(screen.getByLabelText('浏览商店'))
   expect(screen.getByTestId('probe').textContent).toBe('browse:all')
 })

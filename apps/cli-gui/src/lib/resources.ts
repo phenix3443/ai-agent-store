@@ -32,7 +32,7 @@ export function enrichInstalled(item: InstalledItem, detail: ItemDetail): Enrich
   }
 }
 
-const INSTALLED_SECTION_FILTERS: ListFilter[] = ['all', 'installed', 'enabled', 'disabled', 'favorites']
+const INSTALLED_SECTION_FILTERS: ListFilter[] = ['all', 'installed', 'enabled', 'disabled', 'favorites', 'updates']
 const RECOMMENDED_SECTION_FILTERS: ListFilter[] = ['all', 'popular', 'recent', 'favorites']
 
 export function showInstalledSection(filter: ListFilter): boolean {
@@ -47,11 +47,13 @@ export function filterInstalledByListFilter(
   items: EnrichedInstalledItem[],
   filter: ListFilter,
   agentApp: AgentApp,
-  favoriteSlugs: Set<string>
+  favoriteSlugs: Set<string>,
+  updatableSlugs: Set<string> = new Set()
 ): EnrichedInstalledItem[] {
   if (filter === 'enabled') return items.filter((i) => !!i.enabledFor[agentApp])
   if (filter === 'disabled') return items.filter((i) => !i.enabledFor[agentApp])
   if (filter === 'favorites') return items.filter((i) => favoriteSlugs.has(i.slug))
+  if (filter === 'updates') return items.filter((i) => updatableSlugs.has(i.slug))
   return items
 }
 

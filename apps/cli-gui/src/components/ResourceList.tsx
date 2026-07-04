@@ -18,6 +18,7 @@ const FILTER_TOKENS: { key: Exclude<ListFilter, 'all'>; label: string }[] = [
   { key: 'enabled', label: '已启用' },
   { key: 'disabled', label: '已禁用' },
   { key: 'favorites', label: '收藏' },
+  { key: 'updates', label: '有更新' },
 ]
 
 export function ResourceList() {
@@ -51,15 +52,12 @@ export function ResourceList() {
   useEffect(() => {
     refreshInstalled()
     refreshCatalog()
+    refreshUpdates()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [installedVersion])
 
-  useEffect(() => {
-    if (navView === 'updates') refreshUpdates()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navView])
-
   const installedSlugs = useMemo(() => new Set(installed.map((i) => i.slug)), [installed])
+  const updatableSlugs = useMemo(() => new Set(updates.map((u) => u.slug)), [updates])
 
   const visibleInstalled = useMemo(
     () =>
@@ -69,9 +67,10 @@ export function ResourceList() {
         ),
         listFilter,
         agentApp,
-        favoriteSlugs
+        favoriteSlugs,
+        updatableSlugs
       ),
-    [installed, categoryFilter, textQuery, listFilter, agentApp, favoriteSlugs]
+    [installed, categoryFilter, textQuery, listFilter, agentApp, favoriteSlugs, updatableSlugs]
   )
 
   const recommendedBase = useMemo(
@@ -156,18 +155,6 @@ export function ResourceList() {
       appendLine(`✗ ${err instanceof Error ? err.message : String(err)}`, 'red')
     }
     bumpInstalledVersion()
-  }
-
-  async function updateAll() {
-    appendLine('$ aas update')
-    try {
-      await callRpc('update')
-      appendLine('✓ 已全部更新', 'green')
-    } catch (err) {
-      appendLine(`✗ ${err instanceof Error ? err.message : String(err)}`, 'red')
-    }
-    refreshUpdates()
-    refreshInstalled()
   }
 
   async function updateOne(slug: string) {
@@ -262,6 +249,18 @@ export function ResourceList() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {updatableSlugs.has(item.slug) && (
+                        <>
+                          <span className="rounded-md bg-store-amber/10 px-2 py-1 text-xs text-store-amber">有更新</span>
+                          <button
+                            type="button"
+                            onClick={() => updateOne(item.slug)}
+                            className="rounded-md bg-store-accent px-2 py-1 text-xs font-medium text-white hover:opacity-90"
+                          >
+                            更新
+                          </button>
+                        </>
+                      )}
                       <button
                         type="button"
                         aria-label={`为 ${agentApp} ${enabled ? '禁用' : '启用'} ${item.slug}`}
@@ -341,50 +340,6 @@ export function ResourceList() {
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {navView === 'updates' && (
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <p className="flex items-center gap-2 text-xs font-medium text-store-text-2">
-              更新 <span className="rounded-full bg-store-panel-2 px-1.5">{updates.length}</span>
-            </p>
-            {updates.length > 0 && (
-              <button
-                type="button"
-                onClick={updateAll}
-                className="rounded-md bg-store-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
-              >
-                全部更新
-              </button>
-            )}
-          </div>
-          {updates.length === 0 ? (
-            <p className="text-sm text-store-text-2">所有包均为最新</p>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {updates.map((item) => (
-                <div
-                  key={item.slug}
-                  className="rounded-lg border border-store-border bg-store-panel px-3 py-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-store-text">
-                      {item.slug} v{item.currentVersion} → v{item.latestVersion}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => updateOne(item.slug)}
-                      className="rounded-md bg-store-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
-                    >
-                      更新
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
