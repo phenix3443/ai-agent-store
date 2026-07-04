@@ -77,3 +77,32 @@ test('duplicateProviderConnection writes an empty config.json when the source ha
   const config = JSON.parse(await readFile(join(targetDir, 'config.json'), 'utf-8'))
   expect(config).toEqual({})
 })
+
+test('readProviderConnection reads pricingUrl and pricing', async () => {
+  await writeFile(join(dir, 'config.json'), JSON.stringify({
+    apiKey: 'k',
+    pricingUrl: 'https://example.com/pricing',
+    pricing: {
+      'gpt-5': { input: 2.5, output: 15, cacheRead: 0.25 },
+    },
+  }))
+  const conn = await readProviderConnection(dir)
+  expect(conn.pricingUrl).toBe('https://example.com/pricing')
+  expect(conn.pricing).toEqual({ 'gpt-5': { input: 2.5, output: 15, cacheRead: 0.25 } })
+})
+
+test('readProviderConnection returns undefined pricingUrl/pricing when absent', async () => {
+  await writeFile(join(dir, 'config.json'), JSON.stringify({ apiKey: 'k' }))
+  const conn = await readProviderConnection(dir)
+  expect(conn.pricingUrl).toBeUndefined()
+  expect(conn.pricing).toBeUndefined()
+})
+
+test('readProviderConnection ignores a malformed pricing entry (non-numeric input)', async () => {
+  await writeFile(join(dir, 'config.json'), JSON.stringify({
+    apiKey: 'k',
+    pricing: { 'gpt-5': { input: 'not-a-number', output: 15 } },
+  }))
+  const conn = await readProviderConnection(dir)
+  expect(conn.pricing).toBeUndefined()
+})

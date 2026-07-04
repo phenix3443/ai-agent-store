@@ -3,11 +3,20 @@ import { join } from 'path'
 
 export type ProviderAuthType = 'bearer' | 'anthropic' | { header: string }
 
+export interface ModelPricing {
+  input: number
+  output: number
+  cacheRead?: number
+  cacheWrite?: number
+}
+
 export interface ProviderConnection {
   apiKey?: string
   baseUrl?: string
   authType?: ProviderAuthType
   modelMapping?: Record<string, string>
+  pricingUrl?: string
+  pricing?: Record<string, ModelPricing>
 }
 
 function readString(value: unknown): string | undefined {
@@ -33,6 +42,29 @@ function readModelMapping(value: unknown): Record<string, string> | undefined {
   return Object.fromEntries(entries) as Record<string, string>
 }
 
+function readModelPricing(value: unknown): ModelPricing | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const raw = value as Record<string, unknown>
+  if (typeof raw['input'] !== 'number' || typeof raw['output'] !== 'number') return undefined
+  const pricing: ModelPricing = { input: raw['input'], output: raw['output'] }
+  if (typeof raw['cacheRead'] === 'number') pricing.cacheRead = raw['cacheRead']
+  if (typeof raw['cacheWrite'] === 'number') pricing.cacheWrite = raw['cacheWrite']
+  return pricing
+}
+
+function readPricing(value: unknown): Record<string, ModelPricing> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const entries = Object.entries(value as Record<string, unknown>)
+  if (entries.length === 0) return undefined
+  const result: Record<string, ModelPricing> = {}
+  for (const [model, raw] of entries) {
+    const pricing = readModelPricing(raw)
+    if (!pricing) return undefined
+    result[model] = pricing
+  }
+  return result
+}
+
 export async function readProviderConnection(itemDir: string): Promise<ProviderConnection> {
   try {
     const raw = JSON.parse(await readFile(join(itemDir, 'config.json'), 'utf-8')) as Record<string, unknown>
@@ -45,6 +77,8 @@ export async function readProviderConnection(itemDir: string): Promise<ProviderC
         'https://api.openai.com/v1',
       authType: readAuthType(raw['authType']),
       modelMapping: readModelMapping(raw['modelMapping']),
+      pricingUrl: readString(raw['pricingUrl']),
+      pricing: readPricing(raw['pricing']),
     }
   } catch {
     return {}
