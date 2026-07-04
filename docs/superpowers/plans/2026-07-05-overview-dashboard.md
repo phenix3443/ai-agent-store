@@ -880,8 +880,8 @@ function mockRpc(overrides: Record<string, (args?: unknown[]) => unknown> = {}) 
 test('lists existing configs with name, port, and enabled state', async () => {
   mockRpc()
   render(<LocalRelayDetail />)
-  expect(await screen.findByText('默认')).toBeInTheDocument()
-  expect(await screen.findByText('18780')).toBeInTheDocument()
+  expect(await screen.findByDisplayValue('默认')).toBeInTheDocument()
+  expect(await screen.findByDisplayValue('18780')).toBeInTheDocument()
   expect(await screen.findByText(/运行中/)).toBeInTheDocument()
 })
 
@@ -891,7 +891,7 @@ test('adding a config calls addLocalConfig and refreshes the list', async () => 
     addLocalConfig: () => { added = true; return { id: 'new', name: '新配置', port: 18880, enabled: true } },
   })
   render(<LocalRelayDetail />)
-  await screen.findByText('默认')
+  await screen.findByDisplayValue('默认')
   fireEvent.click(screen.getByRole('button', { name: '新增配置' }))
   await waitFor(() => expect(added).toBe(true))
 })
@@ -917,7 +917,7 @@ test('removing a config calls removeLocalConfig', async () => {
     removeLocalConfig: (args) => { removedId = args?.[0] as string; return undefined },
   })
   render(<LocalRelayDetail />)
-  await screen.findByText('额外')
+  await screen.findByDisplayValue('额外')
   const removeButtons = screen.getAllByRole('button', { name: '删除' })
   fireEvent.click(removeButtons[removeButtons.length - 1]!)
   await waitFor(() => expect(removedId).toBe('extra'))
