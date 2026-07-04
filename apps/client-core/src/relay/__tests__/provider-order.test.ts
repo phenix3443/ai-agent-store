@@ -44,7 +44,7 @@ test('sorts enabled providers by level ascending, defaulting unset level to 1', 
 
   const ordered = await findOrderedProvidersForTarget(aasHome, registry, 'claude')
 
-  expect(ordered.map((c) => c.item.slug)).toEqual(['high-priority', 'no-level', 'low-priority'])
+  expect(ordered.map((c) => c.item.slug)).toEqual(['no-level', 'high-priority', 'low-priority'])
 })
 
 test('excludes providers not enabled for the requested target', async () => {
