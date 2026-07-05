@@ -33,6 +33,22 @@ export const MOCK_PUBLISHERS: Publisher[] = [
     tier: 'community',
     bio: '独立开发者，专注前端工具技能。',
   },
+  {
+    id: 'pub-agent-store',
+    slug: 'agent-store',
+    name: 'Agent Store',
+    avatarUrl: 'https://api.dicebear.com/9.x/shapes/svg?seed=agent-store',
+    tier: 'official',
+    bio: 'Agent Store 官方内置组件。',
+  },
+  {
+    id: 'pub-skyapi',
+    slug: 'skyapi',
+    name: 'SkyAPI',
+    avatarUrl: 'https://api.dicebear.com/9.x/shapes/svg?seed=skyapi',
+    tier: 'community',
+    bio: '稳定线路、免翻墙接入 Claude Code 的第三方中转服务。',
+  },
 ]
 
 export function getPublisherBySlug(slug: string): Publisher | null {

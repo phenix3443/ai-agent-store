@@ -118,6 +118,10 @@ export function ResourceList() {
     () =>
       catalog.filter(
         (item) =>
+          // The built-in local relay is already pinned at the top of the installed
+          // section (LOCAL_PROVIDER_SENTINEL); drop the catalog "local" row so it
+          // isn't shown twice in the CLI client.
+          item.slug !== 'local' &&
           (!installedSlugs.has(item.slug) || item.category === 'provider') &&
           matchesCategoryFilter(item.category, categoryFilter) &&
           matchesText(item.name, item.description, textQuery)
