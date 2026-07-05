@@ -30,6 +30,16 @@ function renderPanel(slug = 'filesystem') {
   )
 }
 
+test('renders LocalProviderDetail when selectedSlug is the local-provider sentinel', async () => {
+  mockRpc({
+    listLocalConfigs: () => [{ id: 'default', name: '默认', port: 18780, enabled: true }],
+    getRelayStatus: () => ({ running: true, pid: 1 }),
+  })
+  renderPanel('__local__')
+  fireEvent.click(screen.getByText('select'))
+  expect(await screen.findByText('内置 Provider')).toBeInTheDocument()
+})
+
 test('shows the empty state with no selection', () => {
   renderPanel()
   expect(screen.getByText('从左侧选择一个资源查看详情')).toBeInTheDocument()

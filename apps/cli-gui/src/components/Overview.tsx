@@ -4,6 +4,7 @@ import type { InstalledItem, LocalRelayConfig, RecentRequestRow, RelayStatus, Up
 import { callRpc } from '../lib/rpc'
 import { useAppState } from '../state/AppState'
 import { CategoryIcon } from './CategoryIcon'
+import { LOCAL_PROVIDER_SENTINEL } from './LocalProviderDetail'
 import { ProxyLogModal } from './ProxyLogModal'
 import { UsageTrendChart } from './UsageTrendChart'
 
@@ -14,7 +15,7 @@ const CATEGORY_CARDS: { category: InstalledItem['category']; label: string }[] =
 ]
 
 export function Overview() {
-  const { setNavView, setCategoryFilter } = useAppState()
+  const { setNavView, setCategoryFilter, setSelectedSlug } = useAppState()
   const [installed, setInstalled] = useState<InstalledItem[]>([])
   const [today, setToday] = useState<UsageSummaryRow[]>([])
   const [last7Days, setLast7Days] = useState<UsageSummaryRow[]>([])
@@ -158,7 +159,11 @@ export function Overview() {
 
       <button
         type="button"
-        onClick={() => setNavView('local-relay')}
+        onClick={() => {
+          setCategoryFilter('provider')
+          setNavView('browse')
+          setSelectedSlug(LOCAL_PROVIDER_SENTINEL)
+        }}
         className="flex flex-col items-start gap-1 rounded-xl border border-store-border bg-store-panel p-4 text-left hover:border-store-border-strong"
       >
         <p className="text-sm font-medium text-store-text">本地代理</p>

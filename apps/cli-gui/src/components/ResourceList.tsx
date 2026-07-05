@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Item, InstalledItem, ItemDetail, UpdateAvailable } from '@aas/types'
+import type { Item, InstalledItem, ItemDetail, LocalRelayConfig, RelayStatus, UpdateAvailable } from '@aas/types'
 import { Search } from 'lucide-react'
 import { callRpc } from '../lib/rpc'
 import { useAppState, type ListFilter } from '../state/AppState'
 import { useTerminalLog } from '../state/TerminalLog'
 import { ProviderEditModal } from './ProviderEditModal'
+import { LOCAL_PROVIDER_SENTINEL } from './LocalProviderDetail'
 import {
   matchesCategoryFilter, matchesText, enrichInstalled, filterInstalledByListFilter,
   filterRecommendedByListFilter, showInstalledSection, showRecommendedSection,
@@ -34,6 +35,22 @@ export function ResourceList() {
   const [textQuery, setTextQuery] = useState('')
   const [tokenMenuOpen, setTokenMenuOpen] = useState(false)
   const [editingSlug, setEditingSlug] = useState<string | null>(null)
+  const [localConfigs, setLocalConfigs] = useState<LocalRelayConfig[]>([])
+
+  async function refreshLocal() {
+    setLocalConfigs(await callRpc<LocalRelayConfig[]>('listLocalConfigs'))
+    await callRpc<RelayStatus>('getRelayStatus')
+  }
+
+  async function addLocalPort() {
+    await callRpc('addLocalConfig', ['新配置'])
+    refreshLocal()
+  }
+
+  async function removeLocalPort(id: string) {
+    await callRpc('removeLocalConfig', [id])
+    refreshLocal()
+  }
 
   async function refreshInstalled() {
     const result = await callRpc<InstalledItem[]>('list')
@@ -53,6 +70,7 @@ export function ResourceList() {
     refreshInstalled()
     refreshCatalog()
     refreshUpdates()
+    refreshLocal()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [installedVersion])
 
@@ -225,6 +243,55 @@ export function ResourceList() {
         )}
       </div>
 
+      {navView === 'browse' && categoryFilter === 'provider' && showInstalledSection(listFilter) && (
+        <div>
+          <div
+            onClick={() => setSelectedSlug(LOCAL_PROVIDER_SENTINEL)}
+            className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2 ${
+              selectedSlug === LOCAL_PROVIDER_SENTINEL ? 'border-store-accent bg-store-accent-soft' : 'border-store-border bg-store-panel'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-store-text">local</span>
+              <span className="rounded-full bg-store-accent-soft px-1.5 py-0.5 text-[10px] font-medium text-store-accent">内置</span>
+            </div>
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <span className="text-xs text-store-text-3">
+                {localConfigs.length} 个配置 · {localConfigs.filter((c) => c.enabled).length} 个运行中
+              </span>
+              <button type="button" aria-label="新增本地监听配置" onClick={addLocalPort} className="text-store-text-2 hover:text-store-text">
+                +
+              </button>
+            </div>
+          </div>
+          <div className="ml-4 mt-1 flex flex-col gap-1 border-l border-store-border pl-3">
+            {localConfigs.map((config) => (
+              <div
+                key={config.id}
+                onClick={() => setSelectedSlug(`${LOCAL_PROVIDER_SENTINEL}:${config.id}`)}
+                className={`flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 text-xs ${
+                  selectedSlug === `${LOCAL_PROVIDER_SENTINEL}:${config.id}` ? 'bg-store-accent-soft text-store-accent' : 'text-store-text-2 hover:bg-store-panel'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`h-1.5 w-1.5 rounded-full ${config.enabled ? 'bg-store-green' : 'bg-store-text-3'}`} />
+                  <span>{config.name}</span>
+                  <span className="font-mono text-store-text-3">:{config.port}</span>
+                </div>
+                <button
+                  type="button"
+                  aria-label={`删除 ${config.name}`}
+                  onClick={(e) => { e.stopPropagation(); removeLocalPort(config.id) }}
+                  className="text-store-text-3 hover:text-store-red"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {navView === 'browse' && showInstalledSection(listFilter) && (
         <div>
           <p className="mb-2 flex items-center gap-2 text-xs font-medium text-store-text-2">
@@ -251,7 +318,7 @@ export function ResourceList() {
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {updatableSlugs.has(item.slug) && (
                         <>
-                          <span className="rounded-md bg-store-amber/10 px-2 py-1 text-xs text-store-amber">有更新</span>
+                          <span className="rounded-md bg-store-amber-soft px-2 py-1 text-xs text-store-amber">有更新</span>
                           <button
                             type="button"
                             onClick={() => updateOne(item.slug)}
@@ -266,7 +333,7 @@ export function ResourceList() {
                         aria-label={`为 ${agentApp} ${enabled ? '禁用' : '启用'} ${item.slug}`}
                         onClick={() => toggleEnabled(item)}
                         className={`rounded-md px-2 py-1 text-xs ${
-                          enabled ? 'bg-store-green/10 text-store-green' : 'bg-store-panel-2 text-store-text-2'
+                          enabled ? 'bg-store-green-soft text-store-green' : 'bg-store-panel-2 text-store-text-2'
                         }`}
                       >
                         {enabled ? '已启用' : '已禁用'}

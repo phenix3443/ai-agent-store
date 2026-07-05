@@ -1,7 +1,7 @@
 import { test, expect, afterEach, spyOn, mock } from 'bun:test'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import * as rpcModule from '../../lib/rpc'
-import { AppStateProvider } from '../../state/AppState'
+import { AppStateProvider, useAppState } from '../../state/AppState'
 import { Overview } from '../Overview'
 import type { InstalledItem } from '@aas/types'
 
@@ -114,7 +114,12 @@ test('trend card shows a distinct-model count as 模型分布', async () => {
   expect(modelStat.textContent).toContain('2')
 })
 
-test('shows a local relay status card that navigates to the local-relay view on click', async () => {
+function StateProbe() {
+  const { navView, categoryFilter, selectedSlug } = useAppState()
+  return <div data-testid="state">{navView}:{categoryFilter}:{selectedSlug ?? 'none'}</div>
+}
+
+test('shows a local relay status card that navigates to the inline local provider detail on click', async () => {
   spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string) => {
     if (method === 'list') return []
     if (method === 'getUsageSummary') return []
@@ -125,15 +130,13 @@ test('shows a local relay status card that navigates to the local-relay view on 
     throw new Error(`unexpected RPC in Overview test: ${method}`)
   }) as typeof rpcModule.callRpc)
 
-  render(<AppStateProvider><Overview /></AppStateProvider>)
+  render(<AppStateProvider><Overview /><StateProbe /></AppStateProvider>)
 
   const card = await screen.findByText('本地代理')
   expect(await screen.findByText(/运行中/)).toBeInTheDocument()
   fireEvent.click(card)
-  // Assert navView switched — since Overview itself doesn't render LocalRelayDetail (App.tsx does the
-  // routing), assert the click handler ran without throwing; a full navigation assertion belongs in
-  // an App.tsx-level test instead. Import `fireEvent` from '@testing-library/react' at the top of this
-  // file if not already imported.
+
+  expect(screen.getByTestId('state').textContent).toBe('browse:provider:__local__')
 })
 
 test('shows the 5 most recent requests and opens the proxy log modal from 查看全部', async () => {

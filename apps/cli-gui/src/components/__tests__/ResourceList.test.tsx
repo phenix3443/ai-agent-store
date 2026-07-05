@@ -53,6 +53,10 @@ function defaultHandlers(overrides?: Record<string, (...args: unknown[]) => unkn
     info: (slug: unknown) => infoBySlug[slug as string],
     search: () => [catalogItem],
     checkUpdates: () => [],
+    listLocalConfigs: () => [],
+    getRelayStatus: () => ({ running: false }),
+    addLocalConfig: () => ({ id: 'new', name: '新配置', port: 18880, enabled: true }),
+    removeLocalConfig: () => undefined,
     ...overrides,
   }
 }
@@ -164,6 +168,54 @@ test('the installed list shows an update badge and a real 更新 button for a pa
   const updateButton = screen.getByRole('button', { name: '更新' })
   fireEvent.click(updateButton)
   await waitFor(() => expect(update).toHaveBeenCalledWith('filesystem'))
+})
+
+function SetCategoryFilter({ category }: { category: 'provider' | 'skill' }) {
+  const { setCategoryFilter } = useAppState()
+  useEffect(() => { setCategoryFilter(category) }, [category, setCategoryFilter])
+  return null
+}
+
+async function renderListWithCategory(category: 'provider' | 'skill', handlers?: Record<string, (...args: unknown[]) => unknown>) {
+  mockRpc(defaultHandlers(handlers))
+  return render(
+    <AppStateProvider>
+      <TerminalLogProvider>
+        <ForceBrowseNav>
+          <SetCategoryFilter category={category} />
+          <ResourceList />
+          <TerminalProbe />
+        </ForceBrowseNav>
+      </TerminalLogProvider>
+    </AppStateProvider>
+  )
+}
+
+test('shows an inline local entry with 内置 badge and expandable port rows under the provider category', async () => {
+  await renderListWithCategory('provider', {
+    listLocalConfigs: () => [{ id: 'default', name: '默认', port: 18780, enabled: true }],
+  })
+  expect(await screen.findByText('local')).toBeInTheDocument()
+  expect(await screen.findByText('内置')).toBeInTheDocument()
+  expect(await screen.findByText('默认')).toBeInTheDocument()
+})
+
+test('clicking the local row sets selectedSlug to the sentinel', async () => {
+  await renderListWithCategory('provider', {
+    listLocalConfigs: () => [{ id: 'default', name: '默认', port: 18780, enabled: true }],
+  })
+  const localRow = (await screen.findByText('local')).closest('div')!.parentElement!
+  fireEvent.click(localRow)
+  await waitFor(() => expect(localRow.className).toContain('border-store-accent'))
+})
+
+test('does not show the local entry outside the provider category', async () => {
+  await renderListWithCategory('skill', {
+    listLocalConfigs: () => [{ id: 'default', name: '默认', port: 18780, enabled: true }],
+  })
+  await screen.findByPlaceholderText('搜索，或用 @ 过滤…')
+  expect(screen.queryByText('内置')).not.toBeInTheDocument()
+  expect(screen.queryByText('local')).not.toBeInTheDocument()
 })
 
 test('selecting the @updates token filters the installed list to only updatable packages', async () => {

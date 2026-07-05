@@ -4,6 +4,7 @@ import { callRpc } from '../lib/rpc'
 import { useAppState } from '../state/AppState'
 import { useTerminalLog } from '../state/TerminalLog'
 import { useSelectedDetail } from '../lib/useSelectedDetail'
+import { LocalProviderDetail, isLocalProviderSlug } from './LocalProviderDetail'
 
 const CATEGORY_LABEL: Record<string, string> = { provider: '供应商', skill: '技能', mcp: 'MCP' }
 
@@ -16,10 +17,14 @@ const USE_CASE_COPY: Record<string, string> = {
 type Tab = 'overview' | 'reviews' | 'versions'
 
 export function DetailPanel() {
-  const { favoriteSlugs, toggleFavorite, bumpInstalledVersion } = useAppState()
+  const { favoriteSlugs, toggleFavorite, bumpInstalledVersion, selectedSlug } = useAppState()
   const { appendLine } = useTerminalLog()
   const detail = useSelectedDetail()
   const [tab, setTab] = useState<Tab>('overview')
+
+  if (selectedSlug && isLocalProviderSlug(selectedSlug)) {
+    return <LocalProviderDetail selectedSlug={selectedSlug} />
+  }
 
   if (!detail) {
     return (
@@ -52,12 +57,12 @@ export function DetailPanel() {
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-store-text">{detail.name}</h2>
             {detail.publisher.tier === 'official' && (
-              <span className="rounded-full bg-store-amber/10 px-2 py-0.5 text-[10px] font-medium text-store-amber">
+              <span className="rounded-full bg-store-amber-soft px-2 py-0.5 text-[10px] font-medium text-store-amber">
                 官方
               </span>
             )}
             {!detail.installed && detail.status === 'published' && (
-              <span className="rounded-full bg-store-green/10 px-2 py-0.5 text-[10px] font-medium text-store-green">
+              <span className="rounded-full bg-store-green-soft px-2 py-0.5 text-[10px] font-medium text-store-green">
                 已发布
               </span>
             )}

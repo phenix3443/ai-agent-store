@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 
 export type AgentApp = 'claude' | 'codex'
-export type NavView = 'browse' | 'overview' | 'local-relay'
+export type NavView = 'browse' | 'overview'
 export type CategoryFilter = 'all' | 'provider' | 'skill' | 'mcp'
 export type ListFilter = 'all' | 'popular' | 'recent' | 'installed' | 'enabled' | 'disabled' | 'favorites' | 'updates'
 
