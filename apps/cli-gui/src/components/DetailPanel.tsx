@@ -89,9 +89,11 @@ export function DetailPanel() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h2 className="font-mono text-xl font-bold text-store-text">{detail.name}</h2>
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${tier.textClass} ${tier.bgClass}`}>
-                {tier.label}
-              </span>
+              {detail.publisher.tier !== 'community' && (
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${tier.textClass} ${tier.bgClass}`}>
+                  {tier.label}
+                </span>
+              )}
               <span
                 className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${status.textClass} ${status.borderClass}`}
               >
