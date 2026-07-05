@@ -1,168 +1,162 @@
-# Handoff: Agent Store (Web Store + CLI Client)
+# Handoff: Agent Store — 桌面 CLI 客户端 + Web 商店
 
 ## Overview
-Agent Store is a registry / marketplace for AI-agent extensions — **Skills**, **MCP servers**, and model **Providers** — for coding agents like Claude Code and Codex. It has two surfaces that share one backend and account system:
+**Agent Store** 是一个面向 AI 编码工具(Claude Code / Codex)的「应用商店 + 本地管理客户端」。它有两个可切换的顶层界面(surface):
 
-1. **Web Store** — a Raycast-style marketplace where users browse, search, favorite, inspect, and publish resources. Rendered inside a mock browser window.
-2. **CLI Client** — a desktop app (mock macOS window) for managing which resources are installed into each local agent (`~/.claude`, `~/.codex`), editing provider configs, enabling/disabling per-app, and watching a live terminal log.
+1. **Web 端 · Store** — 浏览器里的市场页,用于发现、搜索、发布 **技能(skill) / MCP / 供应商(provider)**,查看详情、评价、版本、作者主页。
+2. **CLI 客户端** — 一个 macOS 桌面应用外观的窗口,管理本机已安装的资源、消耗仪表盘,以及一个内置的**本地代理供应商 `local`**:把 Claude / Codex 的 base URL 指向 `127.0.0.1:<端口>`,请求经本地按优先级(Level)转发到上游供应商,失败自动降级。
 
-A top segmented switcher toggles between the two surfaces, plus a light/dark theme toggle.
+整个原型是**单文件 Design Component**(`Agent Store.dc.html`),运行时由 `support.js`(一个轻量的模板 + 类组件运行时,思路与 React class component 一致)驱动。
 
 ## About the Design Files
-The files in this bundle are **design references created in HTML** — a prototype showing the intended look and behavior, **not production code to copy directly**. `Agent Store.dc.html` is a "Design Component" authored in a bespoke templating runtime (`support.js`); do not ship that runtime. The task is to **recreate these designs in the target codebase's environment** using its established patterns and libraries. If no environment exists yet, choose the appropriate stack per surface:
-- **Web Store** → React/Next.js + a backend (Supabase is assumed throughout — see data model notes).
-- **CLI Client** → Tauri (Rust) or Electron desktop app; the "install" actions write to real agent config files (`~/.claude/settings.json`, `~/.codex/config.toml`) and a local proxy handles provider model-name rewriting/mapping.
+本包中的 `.dc.html` 文件是**用 HTML 制作的高保真设计参考**——它展示最终的外观、布局、交互与状态流转,**不是**要直接搬进生产环境的代码。任务是:**在目标代码库的现有技术栈中重新实现这些界面**(React / Vue / SwiftUI / Electron / 原生等),沿用该项目既有的组件库、状态管理与设计规范。如果还没有前端环境,则为该项目选择最合适的框架并据此实现。
 
-The `.dc.html` file is fully self-documenting for **exact colors, spacing, typography, copy, and interaction logic** — open it and read the `<style>` `:root` block (tokens), the template markup (layout), and the `class Component` logic (state + behavior).
+`support.js` 是这个原型自用的迷你运行时,**不要**照搬到生产代码;它只是让设计能在浏览器里跑起来。用它来理解**组件的 props/state 结构和渲染逻辑**即可。
 
 ## Fidelity
-**High-fidelity (hifi).** Final colors, typography, spacing, iconography, and interactions are all specified. Recreate the UI pixel-perfectly using the codebase's component library. All copy is in **Simplified Chinese** with a built-in **English** i18n path (see State → uiLang).
+**高保真(hifi)**。颜色、排版、间距、圆角、阴影、交互态都是最终值,请按下方 Design Tokens 与各屏描述像素级还原,只把样式承载方式换成目标代码库的既有体系。
 
 ---
 
-## Design Tokens
+## 顶层结构
 
-Defined as CSS custom properties in `:root` (dark, default) and `[data-theme="light"]`. Recreate as theme objects.
+页面垂直居中,深色渐变墙纸背景(`--wall`)。从上到下:
 
-### Dark theme (default)
-| Token | Value | Use |
-|---|---|---|
-| `--wall` | `radial-gradient(130% 120% at 26% -12%, #2c2647 0%, #16161c 52%, #0b0b0f 100%)` | app backdrop |
-| `--win` | `#17171b` | window body |
-| `--sidebar` | `#1e1e24` | sidebars |
-| `--content` | `#141417` | content panes |
-| `--chrome` | `#1e1e24` | window chrome / title bars |
-| `--panel` | `#23232a` | cards, inputs |
-| `--panel-2` | `#2b2b32` | nested panels |
-| `--border` | `rgba(255,255,255,0.08)` | hairlines |
-| `--border-strong` | `rgba(255,255,255,0.15)` | emphasized borders |
-| `--text` | `#edeef1` | primary text |
-| `--text-2` | `#9a9aa6` | secondary text |
-| `--text-3` | `#64646e` | tertiary/muted |
-| `--accent` | `#7c82ff` | primary action (indigo) |
-| `--accent-soft` | `rgba(124,130,255,0.16)` | accent tint |
-| `--green` | `#3ad29f` | success / installed |
-| `--amber` / `--star` | `#f0b34a` | warnings / rating stars |
-| `--red` | `#f3675f` | destructive / favorite heart |
-| `--term-bg` | `#0c0c10` | terminal background |
-| `--shadow` | `0 34px 90px rgba(0,0,0,0.62)` | window shadow |
+- **顶部切换器**(居中胶囊):`Web 端 · Store` / `CLI 客户端` 两段式开关 + 右侧主题切换按钮(🌙/☀️,切换 dark/light)。
+- **主体**:根据 surface 显示 Web 商店 或 CLI 窗口。
 
-### Light theme (overrides)
-`--win #ffffff` · `--sidebar #f4f4f7` · `--content #fbfbfc` · `--chrome #ececf0` · `--panel #ffffff` · `--panel-2 #f5f5f8` · `--border rgba(0,0,0,0.09)` · `--text #191920` · `--text-2 #5d5d68` · `--text-3 #9797a2` · `--accent #5b54e8` · `--green #16a06a` · `--red #e0483f` · `--shadow 0 34px 90px rgba(0,0,0,0.22)`.
-
-### Typography
-- **Sans (UI):** `-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif`
-- **Mono (code, URLs, IDs, terminal):** `'JetBrains Mono', ui-monospace, 'SF Mono', monospace` (Google Font, weights 400–700)
-- Common sizes: window titles 15px/750, section headers 13–15px/650–750, body 12.5–13px, meta/labels 9.5–12px, mono chips 11–12px. Letter-spacing −0.1 to −0.3px on headings.
-
-### Shape & motion
-- Radii: windows 14px, cards/panels 10–12px, buttons 8–11px, pills/chips 6–8px, avatars 50%.
-- Keyframes: `omFade` (.14s overlay fade), `omDrawer` (30px slide-in for right drawers), `omPop` (modal pop, translateY+scale), `omBlink` (terminal cursor).
-
-### Type accent colors (resource categories)
-- **skill** → green `#3ad29f` (label 技能, meta "大小")
-- **mcp** → amber `#f0b34a` (label MCP, meta "工具")
-- **provider** → blue `#58a6f0` (label 供应商, meta "延迟")
-
-### Publisher tiers
-- **official** 官方 → amber `#f0b34a`
-- **verified** 已验证 → blue `#58a6f0`
-- **community** 社区 → gray `#8b8b96`
+两个 surface 共享同一套 provider/skill/mcp 数据与「已安装」状态,互相同步(在 Web 端安装 → CLI 端「已添加」里出现,反之亦然)。
 
 ---
 
-## Screens / Views
+## Screen 1 — Web 端 · Store
 
-Both windows are fixed **1200 × 764px**, 14px radius, `--shadow`, centered on `--wall`.
+宽约 1180–1248px 的市场页,单列滚动。
 
-### 1. Top Switcher (persistent)
-Centered pill toolbar above the window: segmented control with **"Web 端 · Store"** (globe icon) and **"CLI 客户端"** (terminal icon); active segment gets `--panel` bg + `--text` fg, inactive is transparent + `--text-2`. To its right, a 40×40 theme-toggle button showing ☀️/🌙.
+**顶部**
+- 地址栏样式的伪 URL 条:`🔒 agent-store.dev /explore`(选中某项时变 `/p/<id>`,看作者主页时 `/@<author>`)。
+- 右上:`探索` / `文档` 导航 + 主发布按钮。
 
-### 2. Web Store
-**Chrome:** browser bar (3 traffic-light dots, centered address pill showing 🔒 `agent-store.dev` + mono url path).
-**App header (64px):** indigo logo tile (cube glyph) + "Agent Store" / "registry for AI agents" mono subtitle; nav "探索 / 文档"; indigo **发布** (publish) button with + icon; circular gradient avatar "Y" (opens publisher profile / "me").
+**精选轮播(featured carousel)**
+- 大卡横向轮播,自动播放(打开任意弹层或切到 CLI 时暂停;手动翻页会重置计时)。底部圆点指示 + 左右箭头。展示包名(mono 字体)、`官方` 徽章、简介、下载量 ★评分、版本号。
 
-**Body = main scroll + right rail:**
-- **Featured carousel** (auto-advances every 5s; pauses when any overlay is open, when tab hidden, or on CLI surface). Cycles `superpowers → pdf-processing → frontend-design`. Rotating badges: 本周精选 / 编辑推荐 / 热门上升. Prev/next arrows + dot indicators; manual nav restarts the 5s timer.
-- **Category tabs:** 探索(all) / 供应商 / 技能 / MCP.
-- **Sort:** 全部 / 最近新增 / 最流行 / 评分最高.
-- **Search** input (filters by id/desc/tags).
-- **Resource grid/list** of cards. Each card: type icon + name, publisher + tier badge, star rating (★ glyphs) + review count, download count, version, short desc, tag chips, favorite heart (toggles red fill), and Install/Installed state.
+**筛选行**
+- 左:排序切换 `最流行 / 评分最高`。
+- 中:分类 chip —— `探索(all) / 供应商 / 技能 / MCP / 收藏`。
+- 右:`仅验证` 开关 + `搜索…` 输入框。
 
-**Overlays (all animate in, click-scrim to close):**
-- **Detail drawer** (right, `omDrawer`, z40): full resource detail with tabs (readme / config / reviews-style content), install action, favorite, publisher link. Provider details show supported models; MCP shows transport + command/url/headers.
-- **Publisher profile drawer** (right, z45): author info, tier, their published resources.
-- **Publish modal** (center, `omPop`, z50): type selector (technic/skill/mcp/provider) driving a **dynamic field schema** (see FIELD_SCHEMAS below), with conditional fields.
+**卡片网格**(3 列,`gap:12px`)
+- 每卡:类型图标(圆角方块,底色=类型 soft 色)、包名(mono、700)、`已验证` ✓、作者、类型标签、简介、下载/评分/版本 stat 行、收藏 ♥、安装按钮。
 
-### 3. CLI Client
-**Title bar:** full-width macOS bar — traffic-light dots at left, centered title **"Agent Store CLI"**.
-**Layout:** left nav sidebar (sections: installed / browse / updates / favorites, with icons) + agent-app switcher (**Claude Code** `~/.claude`, **Codex** `~/.codex`) → main list of installed resources → live **terminal** pane at bottom (`--term-bg`, mono, colored lines, blinking cursor).
-- Each installed row: name, version, per-app enable toggle, update badge if outdated, uninstall.
-- Actions push colored lines into the terminal (e.g. `$ agent-store install …` → green `✓ 已安装 …`).
-- **Provider edit modal** (z60): edit provider config — name, baseUrl, apiKey, endpoint, upstream protocol, auth type, custom header, icon, level, **model whitelist**, **model mapping (from→to)**, health check toggle. Also "duplicate provider" support (creates `-copy` variants).
-- **Settings modal** (z60): tabs incl. **account** (logged-in state) and **language** — language menu with 中文 / English enabled, 日本語/한국어/Español "即将支持" disabled. Switching language runs a live DOM i18n walk.
+**详情抽屉 / 页**(点卡片打开)
+- 头部:图标、名称、作者、验证徽章、`安装` 主按钮、♥收藏。
+- Tab:`README(概述)` / `评价` / `版本`。
+- README 由 `genReadme()` 生成(概述、能力清单、安装命令 `agent-store add <id>`、供应商列支持的模型 / MCP 列传输方式与命令 / 技能列下载地址)。
+- 右栏:分类标签、更新/发布/发布时间、资源链接(官网、源码、Marketplace)。
+- provider 详情为**只读信息页**(不含配置表单)。
+
+**发布弹窗**(顶部发布按钮)
+- 类型分段:`供应商 / 技能 / MCP`。
+- 动态表单字段随类型变化;`确认发布` 后该包以 `审核中(pending)` 状态加入用户自己的列表并跳转其详情。
+
+**作者主页**(点作者名)/ **设置弹窗**(账户 / 通用 / 关于;通用含主题、界面语言中/英切换)。
+
+---
+
+## Screen 2 — CLI 客户端
+
+一个 **macOS 窗口**:圆角 14px、深色、投影 `--shadow`;顶部 46px 标题栏(左侧红/黄/绿交通灯 + 居中标题 `⌾ Agent Store CLI`)。窗口内三栏布局:
+
+### 左侧导航栏(58px)
+竖排图标:`浏览商店 / 更新 / (概览/仪表盘)`。图标激活时 `--accent-soft` 背景 + `--accent` 前景。
+
+### 中栏 —— 列表面板(320px,`--sidebar` 背景)
+从上到下:
+1. **顶部头**:当前应用切换(Claude Code / Codex 下拉)、区块标题、筛选漏斗按钮。
+2. **搜索框**。
+3. **本地代理 `local` 状态条**(仅在「供应商」筛选或全部时显示):图标 + `local` + `内置` 徽章 + 摘要(`N 个配置 · M 个运行中`);行右侧 `+` 新建 local 配置。其**子配置**以缩进树形列出:小圆点(运行=绿,停=灰)、配置名、`:端口`、行右侧 **× 删除按钮**(与其它配置一致;至少保留 1 份,删到最后一份时不可再删)。
+4. **已添加**(此前叫「已安装」——**语义是"已添加的 provider / API key 配置"**)分组:每行图标、包名(mono)、可更新时的琥珀色小圆点、作者·类型;provider 行右侧有 `+`(基于该 provider 再建一份子配置)与 `×`(移除);provider 的多份子配置以缩进树形展开,每个子配置行右侧 `×` 删除。
+5. **推荐**分组:未安装的项 + 所有 provider(provider 始终显示,便于随时新建配置)。
+
+### 右栏 —— 详情 / 内容(`--content` 背景,可滚)
+按当前选中对象切换,四种互斥内容(**同一时刻只显示一种**):
+
+- **概览仪表盘**(默认 / 概览导航):`消耗趋势` 折线图 + 时间段切换(今日/近7天/近30天);统计卡(总费用、总 Tokens、总请求数、模型分布);资源计数卡(供应商 / 技能 / MCP,单行紧凑);`local` 运行卡(监听地址、今日请求、成功率、运行开关);`可更新` 列表;`最近请求` 日志(应用、模型→供应商、耗时、状态码,绿=2xx 红=5xx)。
+- **商店详情**(点推荐/浏览里的普通资源):Web 端详情页的 CLI 版。
+- **供应商信息页**(点 `local` 父项或某 provider 父项):只读——名称、作者、简介、监听地址/配置数/运行数、支持模型、标签等。
+- **配置编辑表单**(点某个具体子配置):可编辑字段(见下)。
+- **local 子配置详情**(点 `local` 的某份监听配置):面包屑 `local / <名>`、可改配置名、右上运行状态 + 开关、可改**监听端口**(`127.0.0.1:<port>`)、接入说明。
+
+**Provider 配置表单字段**(`defaultProviderConfig`,`必填 / 可选 / 高级` 三档)
+- 供应商名称、API 地址(baseUrl)、官网、**API 密钥(核心必填,保存时校验非空)**、端点(endpoint)、上游协议(默认「自动检测」)、认证方式、模型白名单/映射、优先级分组(Level 1–10,数字越小越优先)、可用性监控(健康检查开关)、CLI 覆盖(claude / codex 目标)。
+- 底部:`新增子配置` + `保存`;保存成功停留在表单并弹出绿色 `配置已保存` toast(~2.6s 自动消失);API 密钥为空时阻止保存并提示。
+
+**终端反馈**:多处操作(登录、安装、复制、新建/删除配置)向内置终端追加一行带色文本(命令灰、成功绿 `✓`、失败红),保留最近 6 行。
 
 ---
 
 ## Interactions & Behavior
-- **Surface switch** via top segmented control (`surface: 'web' | 'cli'`).
-- **Theme toggle** flips `theme` and the `data-theme` attribute; all colors are token-driven.
-- **Featured carousel:** `setInterval` 5000ms, guarded by `!document.hidden && surface==='web' && !anyOverlay`. Manual prev/next/dot restarts the timer. Index is modulo over available featured ids.
-- **Favorite:** toggles `favorites[id]`; heart fills red.
-- **Install / Uninstall / Enable-disable / Update / Update-all:** mutate `installed[id]` and append lines to the terminal log. Enable/disable is **per agent app** (`apps: {claude, codex}`).
-- **Publish:** type selection swaps the visible field set; conditional fields via `when(vals)` predicates; on confirm, a new package is prepended to `userPkgs` and appears in the store.
-- **Duplicate provider:** clones config under a unique `-copy` id.
-- **i18n:** `uiLang: 'zh' | 'en'`; a DOM-walk translator swaps text on change (in a real app, use a proper i18n library with keyed strings instead of DOM walking).
-- Overlays: fade scrim + slide/pop content; **click on scrim closes**; drawers slide from right.
+- **Surface 切换**:顶部胶囊即时切换 Web/CLI,状态保留。
+- **主题**:dark/light 通过 `[data-theme]` 切换,所有颜色走 CSS 变量。
+- **精选轮播**:自动播放;任意弹层打开或切到 CLI 时暂停;手动翻页重置计时。
+- **安装/卸载**:Web 与 CLI 双向同步;安装 provider 后(CLI 内)自动打开其配置表单。
+- **provider 子配置**:`duplicateProvider()` 复制父配置(清空 name),API Key 置空,追加为父项下的子行并打开编辑。
+- **local 配置**:`addLocalConfig()` 自动分配未占用端口(18100 起 +100);`removeLocalConfig()` 保底至少 1 份;`toggleLocalConfig()` 切换运行态。
+- **保存校验**:API 密钥必填,空则拦截。
+- **弹层**:详情抽屉、发布、设置、作者主页——点遮罩关闭;进入动画 `omDrawer / omPop / omFade`。
+- **i18n**:界面语言中/英实时切换(设置 → 通用),覆盖全部文案、按钮、分类、状态、占位符、tooltip 与拼接文本;日/韩为「即将支持」。
 
 ## State Management
-Top-level state (see `state = {…}` in the logic class):
-- `surface`, `theme`
-- `web`: `{ cat, q, sel, detailTab, profile, verified, sort }`
-- `publishOpen`, `pform: { type, vals }`
-- `settingsOpen`, `settingsTab`, `loggedIn`, `uiLang`, `langMenuOpen`
-- `favorites: { [id]: true }`
-- `userPkgs`, `dupPkgs` (published + duplicated resources, merged ahead of `BASE_PKGS`)
-- `cli`: `{ app, section, appMenuOpen, filter, listFilter, filterMenuOpen }`
-- `installed: { [id]: { ver, apps:{claude,codex}, config? } }` — `config` present for providers
-- `cliEditId`, `cliEditVals` (provider edit modal working copy)
-- `term: [{ text, color }]` (terminal log lines)
+核心 state(见 `state = {…}`):
+- `surface`('web'|'cli')、`theme`('dark'|'light')、`uiLang`('zh'|'en')。
+- `web`:`{ cat, q, sel, detailTab, profile, verified, sort }`。
+- `cli`:`{ app('claude'|'codex'), section, listFilter, filter, view, trendRange, … }`。
+- `installed`:`{ [id]: { ver, apps:{claude,codex}, config? } }` —— 已添加资源 + provider 配置。
+- `providerParents`:子配置 id → 父 provider id 的映射(树形展开用)。
+- `dupPkgs / userPkgs`:复制出的子配置包 / 用户发布的包。
+- `localConfigs`:`[{ id, name, port, running, reqs, success }]`。
+- `localSel / cliEditId / cliInfoId / proxySelected`:右栏当前选中对象(四种内容互斥的判定依据)。
+- `term`:终端最近 6 行日志。
+- 弹层开关:`publishOpen / settingsOpen / proxyLogOpen / langMenuOpen / appMenuOpen / filterMenuOpen`。
 
-Helpers: `allPkgs()`, `pkg(id)`, `decorate(pkg)` (adds tier/status/installed/faved display fields), `reviewsFor()`, `installCmd()`, `duplicateProvider()`.
+渲染层(`renderVals()`)把 state 派生成模板需要的扁平数据 + 事件处理器;`decorate()` 给每个包补齐类型色、图标、stat 行、tier 徽章等。
 
----
+## Design Tokens
 
-## Data Model (maps to Supabase — recreate as real tables/APIs)
+**字体**
+- Sans:`-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif`
+- Mono(包名 / 端口 / 命令):`'JetBrains Mono', ui-monospace, 'SF Mono', monospace`(Google Fonts 引入,400/500/600/700)
 
-### `items` (packages) — see `BASE_PKGS`
-Fields per item: `id`, `type` (`skill|mcp|provider`), `author`, `verified`, `dl` (downloads), `rating`, `reviews`, `ver`, `meta` (type-specific: size / tool-count / latency), `tags[]`, `desc`.
-Type-specific metadata (Supabase `items.metadata` JSONB):
-- **provider** → `PROVIDER_MODELS[id]` = supported model list.
-- **mcp** → `MCP_META[id]` = `{ transport: stdio|sse|http, serverCommand | url + headers }`.
-- **skill** → `contentUrl` (zip download).
+**颜色 — Dark(默认)**
+- 墙纸 `--wall`: `radial-gradient(130% 120% at 26% -12%, #2c2647 0%, #16161c 52%, #0b0b0f 100%)`
+- 面板:`--win #17171b` · `--sidebar #1e1e24` · `--content #141417` · `--chrome #1e1e24` · `--panel #23232a` · `--panel-2 #2b2b32`
+- 边框:`--border rgba(255,255,255,.08)` · `--border-strong rgba(255,255,255,.15)`
+- 文字:`--text #edeef1` · `--text-2 #9a9aa6` · `--text-3 #64646e`
+- 强调:`--accent #7c82ff` · `--accent-soft rgba(124,130,255,.16)`
+- 语义:`--green #3ad29f` · `--amber/--star #f0b34a` · `--red #f3675f`
+- 终端:`--term-bg #0c0c10`
 
-### `publishers`
-`author` + `tier` (`official|verified|community`) via `PUBLISHER_TIER`.
+**颜色 — Light(`[data-theme="light"]`)**
+- `--win #fff` · `--sidebar #f4f4f7` · `--content #fbfbfc` · `--panel #fff` · `--panel-2 #f5f5f8`
+- `--text #191920` · `--text-2 #5d5d68` · `--text-3 #9797a2`
+- `--accent #5b54e8` · `--green #16a06a` · `--amber #cf8a16` · `--red #e0483f`
+- 边框 `rgba(0,0,0,.09)` / `rgba(0,0,0,.16)`
 
-### `installed` (per-user, per-agent — CLI writes to local agent config)
-`{ id → { ver, apps:{claude,codex}, config } }`. Provider `config` shape:
-`{ name, provider, baseUrl, homepage, apiKey, endpoint, upstreamProtocol, authType, customHeader, icon, level, whitelist[], mapping[], healthCheck }`.
+**类型色**(供应商/技能/MCP 图标底色)
+- skill: `#3ad29f` (soft `rgba(58,210,159,.16)`)
+- mcp: `#f0b34a` (soft `rgba(240,179,74,.16)`)
+- provider: `#7c82ff`(accent)
 
-### Publish field schemas — `FIELD_SCHEMAS`
-Dynamic form per resource type:
-- **provider:** name, homepage, baseUrl, supportedModels (comma list).
-- **skill:** name, repo, contentUrl, category(select), installMethod(select), installScript(conditional).
-- **mcp:** name, homepage, transport(select), command(when stdio), url(when sse/http), headers(when sse/http), env(when stdio).
-
-### Reference lists
-- `APPS`: Claude Code (`~/.claude`, `#d2785a`), Codex (`~/.codex`, `#10a37f`).
-- `CATS`, `SORTS`, `TIERS`, `TYPE`, `LANGS` (zh/en enabled; ja/ko/es coming soon), `REVIEW_POOL`, `AVATAR_COLORS`.
+**半径**:卡片/面板 11–14px;chip/按钮 6–10px;胶囊/开关 999px。
+**阴影**:`--shadow: 0 34px 90px rgba(0,0,0,.62)`(light: `…,.22`)。
+**动效**:`omFade / omDrawer(translateX 30→0) / omPop(translateY 10 + scale .985) / omBlink(光标闪烁)`,时长约 180–260ms。
+**滚动条**:9px,thumb `rgba(130,130,150,.32)` 圆角 6px。
 
 ## Assets
-No external images — all icons are inline SVG (see `icon(type)` and the template's inline `<svg>` blocks: provider/skill/mcp/fav/browse/updates/all, plus logo cube, globe, terminal, search, lock, plus). Recreate with the codebase's icon system or an icon library. Only external asset: **JetBrains Mono** from Google Fonts.
+无外部图片。所有图标为**内联 SVG**(1.3–1.6 stroke,圆角线帽);类型图标为纯色圆角方块 + 字形。头像用色板 `AVATAR_COLORS = ['#7c82ff','#3ad29f','#f0b34a','#58a6f0','#c07cf0','#f3675f']`。字体来自 Google Fonts(JetBrains Mono)。示例包/评价/日志均为组件内的**演示数据**(`BASE_PKGS`、`PROXY_LOG` 等),接真实后端时替换。
 
 ## Files
-- `Agent Store.dc.html` — the complete design (template + logic + tokens). The single source of truth.
-- `support.js` — the prototype runtime (reference only; **do not ship**). Included so the HTML opens in a browser for visual reference.
+- `Agent Store.dc.html` — 完整设计(模板 + 逻辑类 + tokens),单文件。
+- `support.js` — 原型运行时(仅供本地打开预览;**勿**搬入生产)。
 
-To preview: open `Agent Store.dc.html` in a browser.
+直接双击 `Agent Store.dc.html` 即可在浏览器打开查看全部界面与交互。

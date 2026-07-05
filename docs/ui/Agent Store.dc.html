@@ -483,11 +483,49 @@
         </div>
       </div>
 
+      <!-- ===== HELP TOOLTIP ===== -->
+      <sc-if value="{{ cli.hasHelpTip }}" hint-placeholder-val="{{ false }}">
+        <div style="position: fixed; left: {{ cli.helpTip.x }}px; top: {{ cli.helpTip.y }}px; transform: translateX(-50%); z-index: 90; max-width: 280px; padding: 9px 12px; border-radius: 8px; background: #1a1a22; border: 1px solid var(--border-strong); box-shadow: 0 8px 26px rgba(0,0,0,0.45); font-size: 11.5px; line-height: 1.55; color: #e6e6ea; pointer-events: none;">{{ cli.helpTip.text }}</div>
+      </sc-if>
+
+      <!-- ===== PROXY LOG MODAL ===== -->
+      <sc-if value="{{ proxyLog.open }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ proxyLog.onClose }}" style="position: absolute; inset: 0; z-index: 55; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; animation: omFade .15s ease both;">
+          <div onClick="{{ stop }}" style="width: 620px; max-height: 78%; display: flex; flex-direction: column; background: var(--win); border: 1px solid var(--border-strong); border-radius: 16px; box-shadow: 0 30px 80px rgba(0,0,0,0.5); animation: omPop .18s ease both;">
+            <div style="padding: 18px 22px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center;">
+              <div style="flex: 1;">
+                <div style="font-size: 15px; font-weight: 750; color: var(--text);">本地代理 · 请求日志</div>
+                <div style="font-size: 11.5px; color: var(--text-3); margin-top: 2px; font-family: var(--mono);">{{ proxy.addr }} · 按 Level 顺序转发，失败自动降级</div>
+              </div>
+              <div onClick="{{ proxyLog.onClose }}" style="width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-3);" style-hover="background: var(--panel-2); color: var(--text)">✕</div>
+            </div>
+            <div style="overflow-y: auto; padding: 8px;">
+              <sc-for list="{{ proxyLog.entries }}" as="e" hint-placeholder-count="5">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px;" style-hover="background: var(--panel)">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: {{ e.statusColor }}; flex-shrink: 0;"></span>
+                  <span style="font-size: 11px; color: var(--text-3); font-family: var(--mono); width: 58px; flex-shrink: 0;">{{ e.time }}</span>
+                  <span style="font-size: 11.5px; font-weight: 600; color: var(--text-2); width: 92px; flex-shrink: 0;">{{ e.app }}</span>
+                  <span style="font-size: 12px; font-family: var(--mono); color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ e.model }}</span>
+                  <span style="font-size: 11px; color: var(--accent); font-family: var(--mono);">→ {{ e.provider }}</span>
+                  <sc-if value="{{ e.fallback }}" hint-placeholder-val="{{ false }}"><span style="font-size: 9.5px; font-weight: 700; color: var(--amber); padding: 1px 6px; border-radius: 4px; background: rgba(240,179,74,0.16);">降级</span></sc-if>
+                  <span style="font-size: 11px; color: var(--text-3); font-family: var(--mono); width: 52px; text-align: right; flex-shrink: 0;">{{ e.ms }}ms</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
       <div style="flex: 1; min-height: 0; display: flex;">
 
       <!-- col1: activity rail -->
       <div style="width: 58px; flex-shrink: 0; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center;">
         <div style="display: flex; flex-direction: column; gap: 7px; width: 100%; align-items: center; margin-top: 16px;">
+          <div onClick="{{ cli.onOverview }}" title="概览" style="position: relative; width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: {{ cli.overviewBg }};" style-hover="background: var(--panel-2)">
+            <div style="position: absolute; left: -8px; top: 11px; width: 3px; height: 20px; border-radius: 0 2px 2px 0; background: {{ cli.overviewBar }};"></div>
+            <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="2.5" width="6" height="6" rx="1.5" stroke="{{ cli.overviewColor }}" stroke-width="1.5"></rect><rect x="11.5" y="2.5" width="6" height="6" rx="1.5" stroke="{{ cli.overviewColor }}" stroke-width="1.5"></rect><rect x="2.5" y="11.5" width="6" height="6" rx="1.5" stroke="{{ cli.overviewColor }}" stroke-width="1.5"></rect><rect x="11.5" y="11.5" width="6" height="6" rx="1.5" stroke="{{ cli.overviewColor }}" stroke-width="1.5"></rect></svg>
+          </div>
+          <div style="width: 26px; height: 1px; background: var(--border); margin: 3px 0;"></div>
           <sc-for list="{{ cli.filterChips }}" as="c" hint-placeholder-count="4">
             <div onClick="{{ c.onClick }}" title="{{ c.label }}" style="position: relative; width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: {{ c.railBg }};" style-hover="background: var(--panel-2)">
               <div style="position: absolute; left: -8px; top: 11px; width: 3px; height: 20px; border-radius: 0 2px 2px 0; background: {{ c.railBar }};"></div>
@@ -500,10 +538,8 @@
       </div>
 
       <!-- col2: list panel -->
+      <sc-if value="{{ cli.isList }}" hint-placeholder-val="{{ true }}"><div style="display: contents;">
       <div style="width: 320px; flex-shrink: 0; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column;">
-        <div style="height: 40px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid var(--border);">
-          <span style="flex: 1; font-size: 11px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.8px;">{{ cli.activeTypeLabel }}</span>
-        </div>
         <div style="padding: 12px 14px 8px; position: relative;">
           <div style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 7px 0 11px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border);">
             <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="var(--text-3)" stroke-width="1.4"></circle><path d="M8.5 8.5l3 3" stroke="var(--text-3)" stroke-width="1.4" stroke-linecap="round"></path></svg>
@@ -553,9 +589,40 @@
           <sc-if value="{{ cli.showInstalledSection }}" hint-placeholder-val="{{ true }}">
           <div style="display: flex; align-items: center; gap: 6px; padding: 8px 8px 6px;">
             <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2.5 3.5L5 6.5L7.5 3.5" stroke="var(--text-2)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-            <span style="flex: 1; font-size: 11px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.6px;">已安装</span>
+            <span style="flex: 1; font-size: 11px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.6px;">已添加</span>
             <span style="font-size: 10px; font-weight: 700; color: #fff; background: var(--text-3); padding: 1px 7px; border-radius: 20px; font-family: var(--mono);">{{ cli.installedCount }}</span>
           </div>
+          <!-- pinned: local proxy as built-in provider -->
+          <sc-if value="{{ cli.showProxyRow }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ proxy.onSelect }}" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; background: {{ proxy.rowSelBg }}; border-left: 2px solid {{ proxy.rowSelBar }};" style-hover="background: var(--panel)">
+              <div style="width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent);">
+                <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><path d="M10 2.5c-2 2.2-3 4.7-3 7.5s1 5.3 3 7.5c2-2.2 3-4.7 3-7.5s-1-5.3-3-7.5z" stroke="currentColor" stroke-width="1.3"></path><path d="M2.7 7h14.6M2.7 13h14.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <span style="font-size: 12.5px; font-weight: 700; color: var(--text); font-family: var(--mono);">local</span>
+                  <span style="font-size: 9px; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 1px 6px; border-radius: 20px;">内置</span>
+                </div>
+                <div style="font-size: 10.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ proxy.summary }}</div>
+              </div>
+              <div onClick="{{ proxy.onAddConfig }}" title="新建 local 配置" style="width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-3);" style-hover="background: var(--panel-2); color: var(--text)">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg>
+              </div>
+            </div>
+            <sc-for list="{{ proxy.configs }}" as="c" hint-placeholder-count="2">
+              <div onClick="{{ c.onOpen }}" style="display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 30px; border-radius: 8px; cursor: pointer; position: relative; background: {{ c.rowSelBg }}; border-left: 2px solid {{ c.rowSelBar }};" style-hover="background: var(--panel)">
+                <span style="position: absolute; left: 16px; top: 0; bottom: 50%; width: 8px; border-left: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); border-radius: 0 0 0 5px;"></span>
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: {{ c.dot }}; flex-shrink: 0;"></span>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 12px; font-weight: 650; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ c.name }}</div>
+                  <div style="font-size: 10px; color: var(--text-3); font-family: var(--mono);">:{{ c.port }}</div>
+                </div>
+                <div onClick="{{ c.onRemove }}" title="删除配置" style="width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-3);" style-hover="background: var(--panel-2); color: var(--red)">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg>
+                </div>
+              </div>
+            </sc-for>
+          </sc-if>
           <sc-for list="{{ cli.installedList }}" as="p" hint-placeholder-count="4">
             <div onClick="{{ p.onOpen }}" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; background: {{ p.rowSelBg }}; border-left: 2px solid {{ p.rowSelBar }};" style-hover="background: var(--panel)">
               <div style="width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; background: {{ p.softBg }}; color: {{ p.color }};">{{ p.glyph }}</div>
@@ -566,10 +633,26 @@
                 </div>
                 <div style="font-size: 10.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ p.author }} · {{ p.typeLabel }}</div>
               </div>
-              <div onClick="{{ p.onToggle }}" style="width: 30px; height: 18px; border-radius: 9px; padding: 2px; display: flex; cursor: pointer; flex-shrink: 0; justify-content: {{ p.knobJustify }}; background: {{ p.trackBg }};">
-                <div style="width: 14px; height: 14px; border-radius: 50%; background: #fff;"></div>
+              <sc-if value="{{ p.isProvider }}" hint-placeholder-val="{{ false }}">
+                <div onClick="{{ p.onDuplicate }}" title="新增子配置" style="width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-3);" style-hover="background: var(--panel-2); color: var(--text)">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg>
+                </div>
+              </sc-if>
+              <div onClick="{{ p.onUninstall }}" title="移除" style="width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-3);" style-hover="background: var(--panel-2); color: var(--red)">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg>
               </div>
             </div>
+            <sc-if value="{{ p.hasChildren }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ p.children }}" as="c" hint-placeholder-count="1">
+                <div onClick="{{ c.onOpen }}" style="display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 30px; border-radius: 8px; cursor: pointer; position: relative; background: {{ c.rowSelBg }}; border-left: 2px solid {{ c.rowSelBar }};" style-hover="background: var(--panel)">
+                  <span style="position: absolute; left: 16px; top: 0; bottom: 50%; width: 8px; border-left: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); border-radius: 0 0 0 5px;"></span>
+                  <span style="font-size: 12px; font-weight: 650; color: var(--text-2); font-family: var(--mono); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ c.name }}</span>
+                  <div onClick="{{ c.onUninstall }}" title="删除子配置" style="width: 20px; height: 20px; border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-3);" style-hover="background: var(--panel-2); color: var(--red)">
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path></svg>
+                  </div>
+                </div>
+              </sc-for>
+            </sc-if>
           </sc-for>
           </sc-if>
 
@@ -590,7 +673,7 @@
                 </div>
                 <div style="font-size: 10.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">★ {{ p.rating }} · ↓ {{ p.dl }}</div>
               </div>
-              <div onClick="{{ p.onInstall }}" style="padding: 4px 10px; border-radius: 7px; background: var(--panel-2); border: 1px solid var(--border-strong); font-size: 11px; font-weight: 650; color: var(--text); cursor: pointer; flex-shrink: 0;" style-hover="border-color: var(--accent); color: var(--accent)">安装</div>
+              <div onClick="{{ p.onInstall }}" style="padding: 4px 10px; border-radius: 7px; background: var(--panel-2); border: 1px solid var(--border-strong); font-size: 11px; font-weight: 650; color: var(--text); cursor: pointer; flex-shrink: 0;" style-hover="border-color: var(--accent); color: var(--accent)">{{ p.installLabel }}</div>
             </div>
           </sc-for>
           </sc-if>
@@ -598,7 +681,67 @@
       </div>
 
       <!-- main -->
-      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--content);">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--content); position: relative; overflow-y: auto;">
+        <sc-if value="{{ cli.configSaved }}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; top: 14px; right: 22px; z-index: 30; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; background: var(--green); box-shadow: 0 8px 26px rgba(0,0,0,0.4); animation: omPop .2s ease both;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5L6 12l7.5-8" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span style="font-size: 12.5px; font-weight: 650; color: #fff;">配置已保存</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ cli.showProxy }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 24px 28px 32px; max-width: 860px;">
+            <!-- ===== PARENT: local provider overview ===== -->
+            <sc-if value="{{ proxy.isParent }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: flex-start; gap: 18px; padding-bottom: 22px; margin-bottom: 24px; border-bottom: 1px solid var(--border);">
+                <div style="width: 72px; height: 72px; border-radius: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent);">
+                  <svg width="34" height="34" viewBox="0 0 20 20" fill="none"><path d="M10 2.5c-2 2.2-3 4.7-3 7.5s1 5.3 3 7.5c2-2.2 3-4.7 3-7.5s-1-5.3-3-7.5z" stroke="currentColor" stroke-width="1.3"></path><path d="M2.7 7h14.6M2.7 13h14.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 24px; font-weight: 780; color: var(--text); font-family: var(--mono); letter-spacing: -0.3px;">local</span>
+                    <span style="font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; color: var(--accent); background: var(--accent-soft);">内置 Provider</span>
+                  </div>
+                  <div style="font-size: 12.5px; color: var(--text-3); margin-top: 5px;">by Agent Store</div>
+                  <div style="font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin-top: 12px; max-width: 620px;">Claude / Codex 指向 local 的某个监听端口，请求经该配置按 Level 顺序转发到上游供应商，失败自动降级。</div>
+                </div>
+              </div>
+            </sc-if>
+            <!-- ===== CHILD: single config detail ===== -->
+            <sc-if value="{{ proxy.isChild }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 14px; padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--border);">
+                <div onClick="{{ proxy.onBack }}" title="返回 local" style="width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border-strong); color: var(--text-2);" style-hover="border-color: var(--accent); color: var(--accent)">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M10 3l-5 5 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 11px; color: var(--text-3); font-family: var(--mono);">local /</span>
+                    <input value="{{ proxy.cfg.name }}" onInput="{{ proxy.cfg.onName }}" style="font-size: 18px; font-weight: 750; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid transparent; outline: none; padding: 0 0 2px; font-family: var(--sans);" style-focus="border-bottom-color: var(--border-strong)" />
+                  </div>
+                  <div style="font-size: 12px; color: var(--text-3); margin-top: 3px;">启用后自动将所选客户端的请求转发到此端口，无需手动配置。</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 9px; flex-shrink: 0;">
+                  <span style="font-size: 12px; font-weight: 600; color: {{ proxy.cfg.statusFg }};">{{ proxy.cfg.statusLabel }}</span>
+                  <div onClick="{{ proxy.cfg.onToggle }}" style="width: 42px; height: 24px; border-radius: 12px; padding: 2px; display: flex; cursor: pointer; justify-content: {{ proxy.cfg.knobJustify }}; background: {{ proxy.cfg.trackBg }};">
+                    <div style="width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.35);"></div>
+                  </div>
+                </div>
+              </div>
+              <div style="max-width: 520px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 9px;">适用客户端</div>
+                <div style="display: flex; gap: 10px; margin-bottom: 22px;">
+                  <sc-for list="{{ proxy.cfg.appOpts }}" as="op" hint-placeholder-count="2">
+                    <div onClick="{{ op.onClick }}" title="{{ op.label }}" style="width: 54px; height: 46px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1.5px solid {{ op.border }}; background: {{ op.bg }}; cursor: pointer; transition: all .15s;">{{ op.icon }}</div>
+                  </sc-for>
+                </div>
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 9px;">监听端口</div>
+                <div style="display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-radius: 11px; border: 1px solid var(--border); background: var(--panel);">
+                  <span style="font-size: 15px; font-weight: 700; color: var(--text-3); font-family: var(--mono);">127.0.0.1 :</span>
+                  <input value="{{ proxy.cfg.port }}" onInput="{{ proxy.cfg.onPort }}" style="width: 84px; font-size: 15px; font-weight: 700; color: var(--accent); font-family: var(--mono); background: var(--panel-2); border: 1px solid var(--border); border-radius: 7px; outline: none; padding: 6px 9px;" style-focus="border-color: var(--accent)" />
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
         <div style="height: 56px; flex-shrink: 0; border-bottom: 1px solid var(--border); display: none; align-items: center; gap: 14px; padding: 0 22px;">
           <div style="min-width: 0;">
             <div style="font-size: 15px; font-weight: 750; color: var(--text); letter-spacing: -0.2px;">{{ cli.headerTitle }}</div>
@@ -613,14 +756,238 @@
           </sc-if>
         </div>
 
-        <div style="flex: 1; min-height: 0; overflow-y: auto;">
+        <div style="min-height: 0;">
           <!-- col3 detail rendered here -->
           <sc-if value="{{ cli.detailEmpty }}" hint-placeholder-val="{{ true }}">
-            <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--text-3);">
+            <div style="min-height: 62vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--text-3);">
               <div style="width: 60px; height: 60px; border-radius: 16px; background: var(--panel); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v10l-7 4-7-4V7z" stroke="var(--text-3)" stroke-width="1.4" stroke-linejoin="round"></path></svg>
               </div>
               <div style="font-size: 13.5px; font-weight: 600; color: var(--text-2);">从左侧选择一个资源查看详情</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ cli.showConfig }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 0 0 28px;">
+              <!-- header: name + actions (sticky, stays reachable while scrolling) -->
+              <div style="position: sticky; top: 0; z-index: 5; background: var(--content); display: flex; align-items: flex-start; gap: 14px; padding: 20px 28px 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border);">
+                <div style="flex: 1; min-width: 0;">
+                  <input id="cli-config-name" data-cfield="name" value="{{ cli.edit.nameValue }}" onInput="{{ cli.edit.onNameInput }}" placeholder="给这份配置起个名字" style="font-size: 18px; font-weight: 750; color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid {{ cli.edit.nameBorder }}; outline: none; width: 100%; padding: 0 0 4px; font-family: var(--sans);" style-focus="border-bottom-color: var(--border-strong)" />
+                  <sc-if value="{{ cli.edit.nameHasError }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size: 11px; color: var(--red); margin-top: 5px;">请先填写配置名称</div>
+                  </sc-if>
+                </div>
+                <div style="flex-shrink: 0; display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-3); padding-top: 4px;">
+                  <sc-if value="{{ cli.edit.saving }}" hint-placeholder-val="{{ false }}"><span style="color: var(--text-3);">自动保存中…</span></sc-if>
+                  <sc-if value="{{ cli.edit.saved }}" hint-placeholder-val="{{ true }}"><svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.5l3 3 6-7" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg><span style="color: var(--green);">已自动保存</span></sc-if>
+                </div>
+              </div>
+              <!-- non-blocking warnings -->
+              <sc-if value="{{ cli.edit.showWarn }}" hint-placeholder-val="{{ false }}">
+                <div style="margin: 0 28px 14px; display: flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 9px; background: var(--amber-soft); border: 1px solid var(--amber);">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.8l6.4 11.4H1.6z" stroke="var(--amber)" stroke-width="1.3" stroke-linejoin="round"></path><path d="M8 6.4v3M8 11.4v.05" stroke="var(--amber)" stroke-width="1.3" stroke-linecap="round"></path></svg>
+                  <span style="font-size: 11.5px; color: var(--text-2);">{{ cli.edit.warnText }}</span>
+                </div>
+              </sc-if>
+              <!-- compact two-column grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px 20px; max-width: 620px; align-items: start; padding: 0 28px;">
+              <sc-for list="{{ cli.edit.fields }}" as="fd" hint-placeholder-count="6">
+                <div style="grid-column: {{ fd.gridCol }}; min-width: 0;">
+                  <div style="font-size: 11px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; display: flex; align-items: center; gap: 4px;">{{ fd.label }}<sc-if value="{{ fd.isRequired }}" hint-placeholder-val="{{ false }}"><span style="color: var(--red);">*</span></sc-if><sc-if value="{{ fd.isReadonly }}" hint-placeholder-val="{{ false }}"><span title="供应商名称由资源本身决定，不可修改" style="font-size: 10px; font-weight: 500; color: var(--text-3); cursor: help;">（不可修改）</span></sc-if><sc-if value="{{ fd.hasHelp }}" hint-placeholder-val="{{ false }}"><span onMouseEnter="{{ fd.onHelpEnter }}" onMouseLeave="{{ fd.onHelpLeave }}" style="display: inline-flex; cursor: help; color: var(--text-3);" style-hover="color: var(--accent)"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.6" stroke="currentColor" stroke-width="1.1"></circle><path d="M7 6.2v3.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></path><circle cx="7" cy="4.5" r="0.7" fill="currentColor"></circle></svg></span></sc-if></div>
+                  <sc-if value="{{ fd.isText }}" hint-placeholder-val="{{ true }}">
+                    <input value="{{ fd.value }}" data-cfield="{{ fd.dataField }}" onInput="{{ fd.onInput }}" placeholder="{{ fd.ph }}" style="width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid {{ fd.inputBorder }}; background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12px; outline: none;" style-focus="border-color: var(--accent)" />
+                    <sc-if value="{{ fd.hasError }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size: 10.5px; color: var(--red); margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="var(--red)" stroke-width="1.2"></circle><path d="M6 3.4v3M6 8.2v.05" stroke="var(--red)" stroke-width="1.3" stroke-linecap="round"></path></svg>
+                        {{ fd.errText }}
+                      </div>
+                    </sc-if>
+                  </sc-if>
+                  <sc-if value="{{ fd.isReadonly }}" hint-placeholder-val="{{ false }}">
+                    <div style="width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border); background: var(--code-bg); color: var(--text-2); font-family: var(--mono); font-size: 12px;">
+                      {{ fd.value }}
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ fd.isSelect }}" hint-placeholder-val="{{ false }}">
+                    <div style="position: relative;">
+                      <select value="{{ fd.value }}" onChange="{{ fd.onSelect }}" style="width: 100%; padding: 9px 32px 9px 11px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; appearance: none; -webkit-appearance: none; cursor: pointer;" style-focus="border-color: var(--accent)">
+                        <sc-for list="{{ fd.optionValues }}" as="ov" hint-placeholder-count="4">
+                          <option value="{{ ov }}">{{ ov }}</option>
+                        </sc-for>
+                      </select>
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="position: absolute; right: 11px; top: 50%; transform: translateY(-50%); pointer-events: none;"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--text-3)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ fd.isApps }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; gap: 10px;">
+                      <sc-for list="{{ fd.appOpts }}" as="op" hint-placeholder-count="2">
+                        <div onClick="{{ op.onClick }}" title="{{ op.label }}" style="width: 54px; height: 46px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 1.5px solid {{ op.border }}; background: {{ op.bg }}; cursor: pointer; transition: all .15s;">{{ op.icon }}</div>
+                      </sc-for>
+                    </div>
+                    <sc-if value="{{ fd.hasError }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size: 10.5px; color: var(--red); margin-top: 4px;">{{ fd.errText }}</div>
+                    </sc-if>
+                  </sc-if>
+                </div>
+              </sc-for>
+              </div>
+
+              <!-- 更多设置（可选，均有默认值） -->
+              <div style="margin: 16px 28px 0; border: 1px solid var(--border); border-radius: 11px; overflow: hidden; max-width: 620px;">
+                <div onClick="{{ cli.edit.onToggleMore }}" style="display: flex; align-items: center; gap: 9px; padding: 12px 15px; cursor: pointer;" style-hover="background: var(--panel)">
+                  <span style="color: var(--text-3); font-size: 12px;">{{ cli.edit.moreChevron }}</span>
+                  <span style="font-size: 12.5px; font-weight: 650; color: var(--text);">更多设置</span>
+                  <span style="font-size: 10.5px; color: var(--text-3);">API 地址 · 端点 · 协议 · 认证 · 图标 · 优先级 —— 均有默认值，可不填</span>
+                </div>
+                <sc-if value="{{ cli.edit.moreOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 14px 15px 16px; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: 13px 20px; align-items: start;">
+                    <sc-for list="{{ cli.edit.optionalFields }}" as="fd" hint-placeholder-count="6">
+                      <div style="grid-column: {{ fd.gridCol }}; min-width: 0;">
+                        <div style="font-size: 11px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; display: flex; align-items: center; gap: 4px;">{{ fd.label }}<sc-if value="{{ fd.hasHelp }}" hint-placeholder-val="{{ false }}"><span onMouseEnter="{{ fd.onHelpEnter }}" onMouseLeave="{{ fd.onHelpLeave }}" style="display: inline-flex; cursor: help; color: var(--text-3);" style-hover="color: var(--accent)"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.6" stroke="currentColor" stroke-width="1.1"></circle><path d="M7 6.2v3.1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></path><circle cx="7" cy="4.5" r="0.7" fill="currentColor"></circle></svg></span></sc-if></div>
+                        <sc-if value="{{ fd.isText }}" hint-placeholder-val="{{ true }}">
+                          <input value="{{ fd.value }}" onInput="{{ fd.onInput }}" placeholder="{{ fd.ph }}" style="width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12px; outline: none;" style-focus="border-color: var(--accent)" />
+                        </sc-if>
+                        <sc-if value="{{ fd.isSelect }}" hint-placeholder-val="{{ false }}">
+                          <div style="position: relative;">
+                            <select value="{{ fd.value }}" onChange="{{ fd.onSelect }}" style="width: 100%; padding: 9px 32px 9px 11px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12px; outline: none; appearance: none; -webkit-appearance: none; cursor: pointer;" style-focus="border-color: var(--accent)">
+                              <sc-for list="{{ fd.optionValues }}" as="ov" hint-placeholder-count="4">
+                                <option value="{{ ov }}">{{ ov }}</option>
+                              </sc-for>
+                            </select>
+                            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="position: absolute; right: 11px; top: 50%; transform: translateY(-50%); pointer-events: none;"><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--text-3)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+
+              <!-- advanced (collapsed by default) -->
+              <div style="margin: 16px 28px 0; border: 1px solid var(--border); border-radius: 11px; overflow: hidden; max-width: 620px;">
+                <div onClick="{{ cli.edit.onToggleAdvanced }}" style="display: flex; align-items: center; gap: 9px; padding: 12px 15px; cursor: pointer;" style-hover="background: var(--panel)">
+                  <span style="color: var(--text-3); font-size: 12px;">{{ cli.edit.advChevron }}</span>
+                  <span style="font-size: 12.5px; font-weight: 650; color: var(--text);">高级设置</span>
+                  <span style="font-size: 10.5px; color: var(--text-3);">模型白名单 · 模型映射 · CLI 覆盖 · 可用性监控</span>
+                </div>
+                <sc-if value="{{ cli.edit.advancedOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 4px 15px 16px; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid var(--border);">
+                    <!-- 模型白名单 -->
+                    <div>
+                      <div style="font-size: 11px; font-weight: 600; color: var(--text-2); margin: 12px 0 6px;">模型白名单</div>
+                      <div style="display: flex; gap: 7px;">
+                        <input value="{{ cli.edit.wlDraft }}" onInput="{{ cli.edit.onWlDraft }}" placeholder="输入模型名称，如 claude-*" style="flex: 1; padding: 8px 11px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12px; outline: none;" />
+                        <div onClick="{{ cli.edit.onWlAdd }}" style="padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border-strong); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text); display: flex; align-items: center;" style-hover="border-color: var(--accent); color: var(--accent)">添加</div>
+                      </div>
+                      <sc-if value="{{ cli.edit.whitelist }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                          <sc-for list="{{ cli.edit.whitelist }}" as="w" hint-placeholder-count="1">
+                            <div style="display: flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 7px; background: var(--code-bg); font-family: var(--mono); font-size: 11.5px; color: var(--text);">
+                              {{ w.label }}
+                              <span onClick="{{ w.onRemove }}" style="cursor: pointer; color: var(--text-3); font-size: 13px;" style-hover="color: var(--red)">×</span>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                      <div style="font-size: 10px; color: var(--text-3); line-height: 1.5; margin-top: 7px;">留空表示不限制。支持 claude-* 前缀匹配、anthropic/claude-* 带供应商前缀匹配。</div>
+                    </div>
+                    <!-- 模型映射 -->
+                    <div>
+                      <div style="font-size: 11px; font-weight: 600; color: var(--text-2); margin-bottom: 6px;">模型映射</div>
+                      <div style="display: flex; align-items: center; gap: 7px;">
+                        <input value="{{ cli.edit.mapFromDraft }}" onInput="{{ cli.edit.onMapFrom }}" placeholder="CLI 模型（如 claude-*）" style="flex: 1; min-width: 0; padding: 8px 11px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 11.5px; outline: none;" />
+                        <span style="color: var(--text-3);">→</span>
+                        <input value="{{ cli.edit.mapToDraft }}" onInput="{{ cli.edit.onMapTo }}" placeholder="供应商模型（如 kimi-k2）" style="flex: 1; min-width: 0; padding: 8px 11px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 11.5px; outline: none;" />
+                        <div onClick="{{ cli.edit.onMapAdd }}" style="padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border-strong); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text); display: flex; align-items: center;" style-hover="border-color: var(--accent); color: var(--accent)">添加</div>
+                      </div>
+                      <sc-if value="{{ cli.edit.hasMapping }}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+                          <sc-for list="{{ cli.edit.mapping }}" as="m" hint-placeholder-count="1">
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 7px 11px; border-radius: 8px; background: var(--code-bg); font-family: var(--mono); font-size: 11.5px; color: var(--text);">
+                              <span style="flex: 1;">{{ m.from }}</span>
+                              <span style="color: var(--text-3);">→</span>
+                              <span style="flex: 1;">{{ m.to }}</span>
+                              <span onClick="{{ m.onRemove }}" style="cursor: pointer; color: var(--text-3); font-size: 14px;" style-hover="color: var(--red)">×</span>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                      <div style="font-size: 10px; color: var(--text-3); line-height: 1.5; margin-top: 7px;">把 CLI 请求的模型名改写为供应商实际模型。支持精确、通配符与前缀映射。</div>
+                    </div>
+                    <!-- CLI 配置 -->
+                    <!-- 可用性监控 -->
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div style="flex: 1;">
+                        <div style="font-size: 12.5px; font-weight: 600; color: var(--text);">可用性监控</div>
+                        <div style="font-size: 10px; color: var(--text-3); margin-top: 2px;">启用后会定期健康检查，监控此供应商的可用性</div>
+                      </div>
+                      <span style="font-size: 11px; color: var(--text-3);">{{ cli.edit.healthLabel }}</span>
+                      <div onClick="{{ cli.edit.onToggleHealth }}" style="width: 38px; height: 22px; border-radius: 11px; padding: 2px; display: flex; cursor: pointer; justify-content: {{ cli.edit.healthKnob }}; background: {{ cli.edit.healthTrack }};">
+                        <div style="width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.35);"></div>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ cli.showInfo }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 28px 32px 36px;">
+              <!-- provider header -->
+              <div style="display: flex; align-items: flex-start; gap: 18px; padding-bottom: 22px; border-bottom: 1px solid var(--border);">
+                <div style="width: 72px; height: 72px; border-radius: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: {{ cli.info.softBg }}; color: {{ cli.info.color }};">
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M7 8l-4 4 4 4M17 8l4 4-4 4M14 4l-4 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 24px; font-weight: 780; color: var(--text); font-family: var(--mono); letter-spacing: -0.3px;">{{ cli.info.name }}</span>
+                    <sc-if value="{{ cli.info.showTier }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; color: {{ cli.info.tierColor }}; background: {{ cli.info.tierSoft }};">{{ cli.info.tierLabel }}</span>
+                    </sc-if>
+                  </div>
+                  <div style="font-size: 12.5px; color: var(--text-3); margin-top: 5px;">by {{ cli.info.author }}</div>
+                  <div style="font-size: 13.5px; color: var(--text-2); line-height: 1.6; margin-top: 12px; max-width: 620px;">{{ cli.info.desc }}</div>
+                  <div style="display: flex; align-items: center; gap: 20px; margin-top: 15px;">
+                    <span style="font-size: 12.5px; color: var(--text-3); font-family: var(--mono);">↓ {{ cli.info.dl }}</span>
+                    <span style="font-size: 12.5px; color: var(--star); font-family: var(--mono);">★ {{ cli.info.rating }} · {{ cli.info.reviews }}</span>
+                    <span style="font-size: 12.5px; color: var(--text-3); font-family: var(--mono);">{{ cli.info.ver }}</span>
+                    <span style="font-size: 12.5px; color: var(--text-3); font-family: var(--mono);">{{ cli.info.metaLabel }} {{ cli.info.meta }}</span>
+                  </div>
+                </div>
+              </div>
+              <!-- provider facts -->
+              <div style="display: flex; flex-direction: column; gap: 20px; margin-top: 24px; max-width: 620px;">
+                <div>
+                  <div style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;">官网 / 文档</div>
+                  <a href="{{ cli.info.homepage }}" target="_blank" style="font-size: 13px; color: var(--accent); font-family: var(--mono); text-decoration: none;" style-hover="text-decoration: underline">{{ cli.info.homepage }}</a>
+                </div>
+                <sc-if value="{{ cli.info.hasModels }}" hint-placeholder-val="{{ false }}">
+                  <div>
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;">支持的模型</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+                      <sc-for list="{{ cli.info.models }}" as="m" hint-placeholder-count="3">
+                        <span style="font-size: 12px; padding: 5px 11px; border-radius: 7px; background: var(--code-bg); color: var(--text); font-family: var(--mono);">{{ m.label }}</span>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+                <div>
+                  <div style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;">标签</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 7px;">
+                    <sc-for list="{{ cli.info.tags }}" as="t" hint-placeholder-count="2">
+                      <span style="font-size: 12px; padding: 5px 11px; border-radius: 7px; background: var(--panel); border: 1px solid var(--border); color: var(--text-2);">{{ t.label }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+                <sc-if value="{{ cli.info.hasConfigs }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: center; gap: 8px; padding: 12px 15px; border-radius: 10px; background: var(--accent-soft); border: 1px solid var(--accent);">
+                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5L6 12l7.5-8" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <span style="font-size: 12.5px; color: var(--text); font-weight: 600;">{{ cli.info.configCountLabel }}</span>
+                    <span style="font-size: 11.5px; color: var(--text-3);">在左侧展开父项即可管理</span>
+                  </div>
+                </sc-if>
+              </div>
             </div>
           </sc-if>
           <sc-if value="{{ detailOpen }}" hint-placeholder-val="{{ false }}">
@@ -744,120 +1111,145 @@
           </sc-if>
         </div>
       </div>
-      </div><!-- /col row -->
-      <!-- ===== PROVIDER EDIT MODAL ===== -->
-      <sc-if value="{{ cli.edit.open }}" hint-placeholder-val="{{ false }}">
-        <div onClick="{{ cli.edit.onClose }}" style="position: absolute; inset: 0; z-index: 60; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; animation: omFade .15s ease both;">
-          <div onClick="{{ stop }}" style="width: 540px; max-height: 86%; display: flex; flex-direction: column; background: var(--win); border: 1px solid var(--border-strong); border-radius: 16px; box-shadow: 0 30px 80px rgba(0,0,0,0.5); animation: omPop .18s ease both;">
-            <div style="padding: 20px 24px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;">
-              <input value="{{ cli.edit.nameValue }}" onInput="{{ cli.edit.onNameInput }}" placeholder="配置名称" style="font-size: 16px; font-weight: 750; color: var(--text); background: transparent; border: none; border-bottom: 1px dashed transparent; outline: none; width: 100%; padding: 0 0 2px; font-family: var(--sans);" style-focus="border-bottom-color: var(--border-strong)" />
-              <div style="font-size: 11.5px; color: var(--text-3); margin-top: 3px; font-family: var(--mono);">配置名称 · 点击可修改 · {{ cli.app.label }}</div>
+      </sc-if>
+      <!-- ===== OVERVIEW DASHBOARD ===== -->
+      <sc-if value="{{ cli.isOverview }}" hint-placeholder-val="{{ true }}">
+        <div style="flex: 1; min-width: 0; background: var(--content); overflow-y: auto;">
+          <div style="max-width: 1000px; margin: 0 auto; padding: 16px 26px 14px;">
+            <!-- consumption trend -->
+            <div style="border: 1px solid var(--border); border-radius: 14px; background: var(--panel); padding: 14px 18px; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 9px; background: var(--panel-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><path d="M3 13l4-4 3 3 5-6" stroke="var(--text)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M12 6h3v3" stroke="var(--text)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                </div>
+                <div style="flex: 1;">
+                  <div style="font-size: 15px; font-weight: 750; color: var(--text);">消耗趋势</div>
+                  <div style="font-size: 11px; color: var(--text-3); margin-top: 1px;">用量数据统计</div>
+                </div>
+                <div style="display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: var(--panel-2);">
+                  <sc-for list="{{ cli.overview.trend.rangeTabs }}" as="t" hint-placeholder-count="3">
+                    <div onClick="{{ t.onClick }}" style="padding: 5px 12px; border-radius: 7px; font-size: 11.5px; font-weight: 600; cursor: pointer; background: {{ t.bg }}; color: {{ t.fg }}; box-shadow: {{ t.sh }};">{{ t.label }}</div>
+                  </sc-for>
+                </div>
+              </div>
+              <svg viewBox="{{ cli.overview.trend.viewBox }}" style="width: 100%; height: 116px; display: block;" preserveAspectRatio="none">
+                <sc-for list="{{ cli.overview.trend.yLabels }}" as="g" hint-placeholder-count="4">
+                  <line x1="34" y1="{{ g.lineY }}" x2="668" y2="{{ g.lineY }}" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 4"></line>
+                  <text x="26" y="{{ g.y }}" fill="var(--text-3)" font-size="11" text-anchor="end" dominant-baseline="middle" font-family="var(--mono)">{{ g.label }}</text>
+                </sc-for>
+                <polygon points="{{ cli.overview.trend.areaPoints }}" fill="rgba(93,95,239,0.10)"></polygon>
+                <polyline points="{{ cli.overview.trend.points }}" fill="none" stroke="#5d5fef" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                <sc-for list="{{ cli.overview.trend.dots }}" as="d" hint-placeholder-count="7">
+                  <circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="3.4" fill="var(--panel)" stroke="#5d5fef" stroke-width="2"></circle>
+                </sc-for>
+                <sc-for list="{{ cli.overview.trend.xLabels }}" as="x" hint-placeholder-count="7">
+                  <text x="{{ x.x }}" y="182" fill="var(--text-3)" font-size="10.5" text-anchor="middle" font-family="var(--mono)">{{ x.label }}</text>
+                </sc-for>
+              </svg>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                <sc-for list="{{ cli.overview.trend.stats }}" as="s" hint-placeholder-count="4">
+                  <div style="padding: 9px 12px; border-radius: 10px; background: {{ s.soft }};">
+                    <div style="font-size: 11px; font-weight: 600; color: {{ s.color }}; margin-bottom: 5px;">{{ s.label }}</div>
+                    <div style="font-size: 18px; font-weight: 800; color: var(--text); font-family: var(--mono); line-height: 1;">{{ s.value }}</div>
+                  </div>
+                </sc-for>
+              </div>
             </div>
-            <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto;">
-              <sc-for list="{{ cli.edit.fields }}" as="fd" hint-placeholder-count="6">
-                <div>
-                  <div style="font-size: 11.5px; font-weight: 600; color: var(--text-2); margin-bottom: 6px;">{{ fd.label }}</div>
-                  <sc-if value="{{ fd.isText }}" hint-placeholder-val="{{ true }}">
-                    <input value="{{ fd.value }}" onInput="{{ fd.onInput }}" placeholder="{{ fd.ph }}" style="width: 100%; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12.5px; outline: none;" />
-                  </sc-if>
-                  <sc-if value="{{ fd.isReadonly }}" hint-placeholder-val="{{ false }}">
-                    <div style="width: 100%; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--code-bg); color: var(--text-2); font-family: var(--mono); font-size: 12.5px; display: flex; align-items: center; gap: 7px;">
-                      {{ fd.value }}
-                      <span style="margin-left: auto; font-size: 10px; color: var(--text-3);">不可修改</span>
+
+            <!-- resource type cards -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px;">
+              <sc-for list="{{ cli.overview.cards }}" as="c" hint-placeholder-count="3">
+                <div onClick="{{ c.onClick }}" style="padding: 13px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; display: flex; align-items: center; gap: 12px; transition: border-color .12s;" style-hover="border-color: var(--border-strong)">
+                  <div style="width: 34px; height: 34px; border-radius: 9px; background: {{ c.soft }}; display: flex; align-items: center; justify-content: center; color: {{ c.color }}; flex-shrink: 0;">{{ c.glyph }}</div>
+                  <span style="font-size: 13px; font-weight: 600; color: var(--text-2); flex: 1;">{{ c.label }}</span>
+                  <div style="font-size: 26px; font-weight: 800; color: var(--text); font-family: var(--mono); line-height: 1;">{{ c.count }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- two-column body -->
+            <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; align-items: start;">
+              <!-- LEFT: local proxy + recent log -->
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- proxy card -->
+                <div onClick="{{ cli.overview.onOpenProxy }}" style="padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); cursor: pointer;" style-hover="border-color: var(--border-strong)">
+                  <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 12px;">
+                    <div style="width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, #7c82ff, #b06ad9); display: flex; align-items: center; justify-content: center;">
+                      <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M10 2.5l6 3.2v5.4c0 3.5-2.6 5.6-6 6.9-3.4-1.3-6-3.4-6-6.9V5.7z" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"></path></svg>
                     </div>
-                  </sc-if>
-                  <sc-if value="{{ fd.isSelect }}" hint-placeholder-val="{{ false }}">
-                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                      <sc-for list="{{ fd.options }}" as="op" hint-placeholder-count="10">
-                        <div onClick="{{ op.onClick }}" style="min-width: 34px; text-align: center; padding: 7px 11px; border-radius: 8px; border: 1px solid {{ op.border }}; background: {{ op.bg }}; color: {{ op.fg }}; cursor: pointer; font-size: 12px; font-weight: 600; font-family: var(--mono);">{{ op.label }}</div>
+                    <span style="font-size: 14px; font-weight: 700; color: var(--text); font-family: var(--mono);">local</span>
+                    <span style="display: flex; align-items: center; gap: 5px; margin-left: auto;">
+                      <span style="width: 7px; height: 7px; border-radius: 50%; background: {{ cli.overview.proxyDot }};"></span>
+                      <span style="font-size: 12px; font-weight: 600; color: {{ cli.overview.proxyDot }};">{{ cli.overview.proxyStatus }}</span>
+                    </span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <div>
+                      <div style="font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;">监听地址</div>
+                      <div style="font-size: 13px; font-weight: 700; color: var(--accent); font-family: var(--mono);">{{ cli.overview.proxyAddr }}</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;">今日请求</div>
+                      <div style="font-size: 13px; font-weight: 700; color: var(--text); font-family: var(--mono);">{{ cli.overview.proxyReq }}</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;">成功率</div>
+                      <div style="font-size: 13px; font-weight: 700; color: var(--green); font-family: var(--mono);">{{ cli.overview.proxySuccess }}</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- recent log -->
+                <div style="border: 1px solid var(--border); border-radius: 14px; background: var(--panel); overflow: hidden;">
+                  <div style="display: flex; align-items: center; padding: 14px 18px 12px;">
+                    <span style="font-size: 13px; font-weight: 700; color: var(--text);">最近请求</span>
+                    <span onClick="{{ cli.overview.onOpenProxy }}" style="margin-left: auto; font-size: 11.5px; color: var(--accent); cursor: pointer; font-weight: 600;" style-hover="text-decoration: underline">查看全部</span>
+                  </div>
+                  <sc-for list="{{ cli.overview.recentLog }}" as="e" hint-placeholder-count="5">
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 9px 18px; border-top: 1px solid var(--border);">
+                      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{ e.statusColor }}; flex-shrink: 0;"></span>
+                      <span style="font-size: 11px; font-weight: 700; color: var(--text-2); width: 74px; flex-shrink: 0;">{{ e.app }}</span>
+                      <span style="font-size: 11.5px; font-family: var(--mono); color: var(--text-2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ e.route }}</span>
+                      <span style="font-size: 11px; font-family: var(--mono); color: var(--text-3); flex-shrink: 0;">{{ e.ms }}</span>
+                      <span style="font-size: 11px; font-family: var(--mono); font-weight: 700; color: {{ e.codeColor }}; width: 28px; text-align: right; flex-shrink: 0;">{{ e.code }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <!-- RIGHT: updates + per-app -->
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- updates -->
+                <div style="border: 1px solid var(--border); border-radius: 14px; background: var(--panel); overflow: hidden;">
+                  <div style="display: flex; align-items: center; padding: 14px 16px 12px;">
+                    <span style="font-size: 13px; font-weight: 700; color: var(--text);">可更新</span>
+                    <sc-if value="{{ cli.overview.hasUpdates }}" hint-placeholder-val="{{ false }}">
+                      <span style="margin-left: 7px; font-size: 10.5px; font-weight: 700; color: #fff; background: var(--amber); padding: 1px 7px; border-radius: 20px; font-family: var(--mono);">{{ cli.overview.updatesCount }}</span>
+                    </sc-if>
+                    <span onClick="{{ cli.overview.onViewUpdates }}" style="margin-left: auto; font-size: 11.5px; color: var(--accent); cursor: pointer; font-weight: 600;" style-hover="text-decoration: underline">全部</span>
+                  </div>
+                  <sc-if value="{{ cli.overview.hasUpdates }}" hint-placeholder-val="{{ true }}">
+                    <div>
+                      <sc-for list="{{ cli.overview.updates }}" as="u" hint-placeholder-count="3">
+                        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--border);">
+                          <div style="width: 26px; height: 26px; border-radius: 7px; background: {{ u.soft }}; display: flex; align-items: center; justify-content: center; font-size: 13px; color: {{ u.color }}; flex-shrink: 0;">{{ u.glyph }}</div>
+                          <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 12.5px; font-weight: 650; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ u.name }}</div>
+                            <div style="font-size: 10.5px; color: var(--text-3); font-family: var(--mono);">{{ u.current }} → {{ u.latest }}</div>
+                          </div>
+                          <div onClick="{{ u.onUpdate }}" style="padding: 5px 12px; border-radius: 7px; border: 1px solid var(--border-strong); cursor: pointer; font-size: 11.5px; font-weight: 650; color: var(--text); flex-shrink: 0;" style-hover="border-color: var(--accent); color: var(--accent)">更新</div>
+                        </div>
                       </sc-for>
                     </div>
                   </sc-if>
-                  <sc-if value="{{ fd.hasHelp }}" hint-placeholder-val="{{ false }}">
-                    <div style="font-size: 10.5px; color: var(--text-3); line-height: 1.55; margin-top: 6px;">{{ fd.help }}</div>
-                  </sc-if>
+                  <sc-if value="{{ cli.overview.hasUpdates }}" hint-placeholder-val="{{ false }}"></sc-if>
                 </div>
-              </sc-for>
-
-              <!-- 模型白名单 -->
-              <div>
-                <div style="font-size: 11.5px; font-weight: 600; color: var(--text-2); margin-bottom: 6px;">模型白名单</div>
-                <div style="display: flex; gap: 7px;">
-                  <input value="{{ cli.edit.wlDraft }}" onInput="{{ cli.edit.onWlDraft }}" placeholder="输入模型名称，如 claude-*" style="flex: 1; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12.5px; outline: none;" />
-                  <div onClick="{{ cli.edit.onWlAdd }}" style="padding: 9px 16px; border-radius: 9px; border: 1px solid var(--border-strong); cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text); display: flex; align-items: center;" style-hover="border-color: var(--accent); color: var(--accent)">添加</div>
-                </div>
-                <sc-if value="{{ cli.edit.whitelist }}" hint-placeholder-val="{{ false }}">
-                  <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
-                    <sc-for list="{{ cli.edit.whitelist }}" as="w" hint-placeholder-count="1">
-                      <div style="display: flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 7px; background: var(--code-bg); font-family: var(--mono); font-size: 11.5px; color: var(--text);">
-                        {{ w.label }}
-                        <span onClick="{{ w.onRemove }}" style="cursor: pointer; color: var(--text-3); font-size: 13px;" style-hover="color: var(--red)">×</span>
-                      </div>
-                    </sc-for>
-                  </div>
-                </sc-if>
-                <div style="font-size: 10.5px; color: var(--text-3); line-height: 1.5; margin-top: 7px;">留空表示不限制。支持 claude-* 前缀匹配、anthropic/claude-* 带供应商前缀匹配。</div>
+                <!-- per-app enabled -->
               </div>
-
-              <!-- 模型映射 -->
-              <div>
-                <div style="font-size: 11.5px; font-weight: 600; color: var(--text-2); margin-bottom: 6px;">模型映射</div>
-                <div style="display: flex; align-items: center; gap: 7px;">
-                  <input value="{{ cli.edit.mapFromDraft }}" onInput="{{ cli.edit.onMapFrom }}" placeholder="CLI 模型（如 claude-*）" style="flex: 1; min-width: 0; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12px; outline: none;" />
-                  <span style="color: var(--text-3);">→</span>
-                  <input value="{{ cli.edit.mapToDraft }}" onInput="{{ cli.edit.onMapTo }}" placeholder="供应商模型（如 kimi-k2）" style="flex: 1; min-width: 0; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); font-family: var(--mono); font-size: 12px; outline: none;" />
-                  <div onClick="{{ cli.edit.onMapAdd }}" style="padding: 9px 16px; border-radius: 9px; border: 1px solid var(--border-strong); cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text); display: flex; align-items: center;" style-hover="border-color: var(--accent); color: var(--accent)">添加</div>
-                </div>
-                <sc-if value="{{ cli.edit.hasMapping }}" hint-placeholder-val="{{ false }}">
-                  <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
-                    <sc-for list="{{ cli.edit.mapping }}" as="m" hint-placeholder-count="1">
-                      <div style="display: flex; align-items: center; gap: 8px; padding: 8px 11px; border-radius: 8px; background: var(--code-bg); font-family: var(--mono); font-size: 11.5px; color: var(--text);">
-                        <span style="flex: 1;">{{ m.from }}</span>
-                        <span style="color: var(--text-3);">→</span>
-                        <span style="flex: 1;">{{ m.to }}</span>
-                        <span onClick="{{ m.onRemove }}" style="cursor: pointer; color: var(--text-3); font-size: 14px;" style-hover="color: var(--red)">×</span>
-                      </div>
-                    </sc-for>
-                  </div>
-                </sc-if>
-                <div style="font-size: 10.5px; color: var(--text-3); line-height: 1.5; margin-top: 7px;">把 CLI 请求的模型名改写为供应商实际模型。支持精确、通配符与前缀映射。</div>
-              </div>
-
-              <!-- CLI 配置折叠 -->
-              <div style="border: 1px solid var(--border); border-radius: 11px; overflow: hidden;">
-                <div onClick="{{ cli.edit.onToggleCli }}" style="display: flex; align-items: center; gap: 9px; padding: 13px 15px; cursor: pointer;">
-                  <span style="color: var(--text-3); font-size: 12px;">{{ cli.edit.cliChevron }}</span>
-                  <span style="font-size: 13px; font-weight: 650; color: var(--text);">CLI 配置</span>
-                  <span style="font-size: 10px; font-weight: 700; color: #fff; background: #3b82f6; padding: 2px 8px; border-radius: 5px;">Codex</span>
-                </div>
-                <sc-if value="{{ cli.edit.cliOpen }}" hint-placeholder-val="{{ false }}">
-                  <div style="padding: 0 15px 14px;">
-                    <div style="font-size: 11px; color: var(--text-2); line-height: 1.6;">针对目标 CLI 的额外覆盖项（如 Codex 的 <span style="font-family: var(--mono); color: var(--accent);">model_reasoning_effort</span>、<span style="font-family: var(--mono); color: var(--accent);">wire_api</span>）。留空则沿用全局默认。</div>
-                    <textarea placeholder='{\n  "model_reasoning_effort": "high"\n}' style="width: 100%; height: 74px; margin-top: 9px; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--term-bg); color: #e6e6ea; font-family: var(--mono); font-size: 11.5px; outline: none; resize: none;"></textarea>
-                  </div>
-                </sc-if>
-              </div>
-
-              <!-- 可用性监控 -->
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="flex: 1;">
-                  <div style="font-size: 13px; font-weight: 600; color: var(--text);">可用性监控</div>
-                  <div style="font-size: 10.5px; color: var(--text-3); margin-top: 2px;">启用后会定期健康检查，监控此供应商的可用性</div>
-                </div>
-                <span style="font-size: 11px; color: var(--text-3);">{{ cli.edit.healthLabel }}</span>
-                <div onClick="{{ cli.edit.onToggleHealth }}" style="width: 38px; height: 22px; border-radius: 11px; padding: 2px; display: flex; cursor: pointer; justify-content: {{ cli.edit.healthKnob }}; background: {{ cli.edit.healthTrack }};">
-                  <div style="width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.35);"></div>
-                </div>
-              </div>
-            </div>
-            <div style="padding: 14px 24px 18px; display: flex; gap: 9px; justify-content: flex-end; border-top: 1px solid var(--border); flex-shrink: 0;">
-              <div onClick="{{ cli.edit.onClose }}" style="padding: 9px 16px; border-radius: 9px; border: 1px solid var(--border-strong); cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-2);" style-hover="background: var(--panel)">取消</div>
-              <div onClick="{{ cli.edit.onSave }}" style="padding: 9px 20px; border-radius: 9px; background: var(--accent); cursor: pointer; font-size: 13px; font-weight: 650; color: #fff;" style-hover="filter: brightness(1.08)">保存</div>
             </div>
           </div>
         </div>
       </sc-if>
-
+      </div><!-- /col row -->
       <!-- ===== SETTINGS MODAL ===== -->
       <sc-if value="{{ settings.open }}" hint-placeholder-val="{{ false }}">
         <div onClick="{{ settings.onClose }}" style="position: absolute; inset: 0; z-index: 60; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; animation: omFade .15s ease both;">
@@ -1115,15 +1507,23 @@ class Component extends DCLogic {
     pform: { type: 'skill', vals: { desc: '', category: 'General', installMethod: '默认（复制到 skills 目录）' } },
     favorites: { superpowers: true, filesystem: true },
     userPkgs: [], dupPkgs: [],
-    cli: { app: 'claude', section: 'installed', appMenuOpen: false, filter: 'all', listFilter: 'all', filterMenuOpen: false },
+    cli: { app: 'claude', section: 'installed', appMenuOpen: false, filter: 'all', listFilter: 'all', filterMenuOpen: false, view: 'overview', trendRange: 'today' },
     installed: {
       'filesystem':      { ver: '0.7.0', apps: { claude: true, codex: true } },
       'github':          { ver: '0.6.2', apps: { claude: true, codex: false } },
       'pdf-processing':  { ver: '1.2.0', apps: { claude: true, codex: false } },
       'superpowers':     { ver: '4.2.0', apps: { claude: true, codex: false } },
-      'yls':             { ver: '1.9.0', apps: { claude: true, codex: true }, config: { name: 'yls-me', provider: 'yls', baseUrl: 'https://code.ylsagi.com/codex', homepage: 'https://docs.ylsagi.io/', apiKey: 'yls-xxxxxxxxxxxxxxxxxxxx1234', endpoint: '', upstreamProtocol: '自动检测', authType: 'Bearer', customHeader: '', icon: '默认', level: '1', whitelist: [], mapping: [], healthCheck: false } },
     },
     cliEditId: null, cliEditVals: {},
+    cliInfoId: null,
+    proxySelected: false,
+    providerParents: {},
+    proxyRunning: true, proxyLogOpen: false,
+    localSel: null,
+    localConfigs: [
+      { id: 'local-default', name: '默认', port: 18100, running: true, reqs: '1,284', success: '99.2%', targets: ['claude', 'codex'] },
+      { id: 'local-staging', name: '测试环境', port: 18200, running: false, reqs: '46', success: '97.8%', targets: ['claude'] },
+    ],
     term: [
       { text: '$ agent-store login', color: '#c7c7d0' },
       { text: '✓ 已登录 as you@dev · 5 个包已同步', color: '#3ad29f' },
@@ -1137,10 +1537,26 @@ class Component extends DCLogic {
     let newId = id + '-copy'; let i = 2;
     while (this.state.installed[newId] || this.pkg(newId)) { newId = id + '-copy' + i; i++; }
     const cfg = { ...(inst && inst.config ? inst.config : this.defaultProviderConfig(id)) };
-    cfg.name = (cfg.name || id) + '-copy';
+    cfg.name = '';
     const dupPkg = { ...orig, id: newId };
-    this.setState(st => ({ dupPkgs: [dupPkg, ...st.dupPkgs], installed: { ...st.installed, [newId]: { ver: inst ? inst.ver : orig.ver, apps: { ...(inst ? inst.apps : {}) }, config: cfg } } }));
-    this.pushTerm([{ text: '$ agent-store duplicate ' + id, color: '#c7c7d0' }, { text: '✓ 已复制为 ' + newId + '（请修改其 API 密钥）', color: '#3ad29f' }]);
+    this.setState(st => {
+      let installed = st.installed;
+      let parents = st.providerParents;
+      // ensure the provider itself exists as a top-level parent row (first-time configure)
+      if (!installed[id]) {
+        const apps = { claude: false, codex: false }; apps[st.cli.app] = true;
+        installed = { ...installed, [id]: { ver: orig.ver, apps, config: this.defaultProviderConfig(id) } };
+      }
+      const rootParent = parents[id] || id;
+      const parentApps = installed[id].apps;
+      return {
+        dupPkgs: [dupPkg, ...st.dupPkgs],
+        providerParents: { ...parents, [newId]: rootParent },
+        installed: { ...installed, [newId]: { ver: orig.ver, apps: { ...parentApps }, config: cfg } },
+      };
+    });
+    this.pushTerm([{ text: '$ agent-store duplicate ' + id, color: '#c7c7d0' }, { text: '✓ 已新增子配置 ' + newId + '（请修改其 API 密钥）', color: '#3ad29f' }]);
+    this.openCliEdit(newId);
   };
   installName = (p) => p.id;
   installCmd = (p) => 'agent-store add ' + p.id;
@@ -1160,6 +1576,43 @@ class Component extends DCLogic {
   };
 
   pushTerm = (lines) => this.setState(st => ({ term: [...st.term, ...lines].slice(-6) }));
+  PROXY_LOG = [
+    { time: '14:32:08', app: 'Claude Code', model: 'claude-sonnet-4-5', provider: 'yls', ms: 812, ok: true },
+    { time: '14:31:54', app: 'Codex', model: 'gpt-5-codex', provider: 'openrouter', ms: 1420, ok: true },
+    { time: '14:30:03', app: 'Claude Code', model: 'claude-sonnet-4-5', provider: 'openrouter', ms: 940, ok: true, fallback: true },
+    { time: '14:30:02', app: 'Claude Code', model: 'claude-sonnet-4-5', provider: 'yls', ms: 3005, ok: false },
+    { time: '14:27:41', app: 'Codex', model: 'gpt-5-codex', provider: 'openrouter', ms: 1180, ok: true },
+    { time: '14:25:16', app: 'Claude Code', model: 'claude-sonnet-4-5', provider: 'yls', ms: 764, ok: true },
+  ];
+  toggleProxy = () => this.setState(st => {
+    const running = !st.proxyRunning;
+    this.pushTerm([
+      { text: running ? '$ agent-store proxy start' : '$ agent-store proxy stop', color: '#c7c7d0' },
+      { text: running ? '✓ 本地代理已启动 · 127.0.0.1:18100' : '⏸ 本地代理已停止 · Claude/Codex 请求将直连上游', color: running ? '#3ad29f' : '#f0b34a' },
+    ]);
+    return { proxyRunning: running };
+  });
+  copyProxyAddr = () => this.pushTerm([{ text: '✓ 已复制代理地址 http://127.0.0.1:18100', color: '#3ad29f' }]);
+  openProxyLog = () => this.setState({ proxyLogOpen: true });
+  closeProxyLog = () => this.setState({ proxyLogOpen: false });
+  // ── local provider (multi-config) ──
+  openLocal = () => this.setState(st => ({ proxySelected: true, localSel: null, cliInfoId: null, cliEditId: null, web: { ...st.web, sel: '__proxy__' } }));
+  openLocalConfig = (id) => this.setState(st => ({ proxySelected: true, localSel: id, cliInfoId: null, cliEditId: null, web: { ...st.web, sel: '__proxy__' } }));
+  toggleLocalConfig = (id) => this.setState(st => ({ localConfigs: st.localConfigs.map(c => c.id === id ? { ...c, running: !c.running } : c) }));
+  addLocalConfig = () => this.setState(st => {
+    const used = st.localConfigs.map(c => c.port);
+    let port = 18100; while (used.includes(port)) port += 100;
+    const id = 'local-' + Date.now();
+    this.pushTerm([{ text: '$ agent-store local add --port ' + port, color: '#c7c7d0' }, { text: '✓ 新建 local 配置 · 监听 127.0.0.1:' + port, color: '#3ad29f' }]);
+    return { localConfigs: [...st.localConfigs, { id, name: '新配置', port, running: false, reqs: '0', success: '—', targets: ['claude', 'codex'] }], localSel: id, proxySelected: true, web: { ...st.web, sel: '__proxy__' } };
+  });
+  removeLocalConfig = (id) => this.setState(st => {
+    if (st.localConfigs.length <= 1) return {};
+    const rest = st.localConfigs.filter(c => c.id !== id);
+    return { localConfigs: rest, localSel: st.localSel === id ? null : st.localSel };
+  });
+  setLocalField = (id, key, val) => this.setState(st => ({ localConfigs: st.localConfigs.map(c => c.id === id ? { ...c, [key]: val } : c) }));
+  toggleLocalTarget = (id, app) => this.setState(st => ({ localConfigs: st.localConfigs.map(c => { if (c.id !== id) return c; const cur = c.targets || []; const next = cur.includes(app) ? cur.filter(a => a !== app) : [...cur, app]; return { ...c, targets: next }; }) }));
   setSurface = (s) => this.setState({ surface: s });
   toggleTheme = () => this.setState(st => ({ theme: st.theme === 'dark' ? 'light' : 'dark' }));
 
@@ -1172,7 +1625,8 @@ class Component extends DCLogic {
   goFeatured = (i) => { this.setState({ featIdx: i }); this._restartFeatTimer(); };
   setSort = (key) => this.setWeb({ sort: key });
   recencyOf = (id) => { let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 100000; return h; };
-  openDetail = (id) => this.setWeb({ sel: id, detailTab: 'readme', profile: null });
+  openDetail = (id) => this.setState(st => ({ proxySelected: false, cliInfoId: null, cliEditId: null, localSel: null, web: { ...st.web, sel: id, detailTab: 'readme', profile: null } }));
+  openProxyPanel = () => this.setState(st => ({ proxySelected: true, cliInfoId: null, cliEditId: null, localSel: null, web: { ...st.web, sel: '__proxy__' } }));
   closeDetail = () => this.setWeb({ sel: null });
   setTab = (t) => this.setWeb({ detailTab: t });
   openProfile = (author) => this.setWeb({ profile: author, sel: null });
@@ -1199,10 +1653,13 @@ class Component extends DCLogic {
   setCliApp = (k) => this.setState(st => ({ cli: { ...st.cli, app: k, appMenuOpen: false } }));
   toggleCliAppMenu = () => this.setState(st => ({ cli: { ...st.cli, appMenuOpen: !st.cli.appMenuOpen } }));
   setCliSection = (s) => this.setState(st => ({ cli: { ...st.cli, section: s } }));
-  setCliFilter = (f) => this.setState(st => ({ cli: { ...st.cli, filter: f } }));
+  setTrendRange = (r) => this.setState(st => ({ cli: { ...st.cli, trendRange: r } }));
+  setCliFilter = (f) => this.setState(st => ({ cli: { ...st.cli, filter: f, view: 'list' } }));
   toggleFilterMenu = () => this.setState(st => ({ cli: { ...st.cli, filterMenuOpen: !st.cli.filterMenuOpen } }));
   closeFilterMenu = () => this.setState(st => st.cli.filterMenuOpen ? ({ cli: { ...st.cli, filterMenuOpen: false } }) : {});
   setListFilter = (f) => this.setState(st => ({ cli: { ...st.cli, listFilter: f, filterMenuOpen: false } }));
+  setCliView = (v) => this.setState(st => ({ cli: { ...st.cli, view: v } }));
+  gotoList = (filter, listFilter) => this.setState(st => ({ cli: { ...st.cli, view: 'list', filter: filter != null ? filter : st.cli.filter, listFilter: listFilter != null ? listFilter : st.cli.listFilter }, proxySelected: false, cliEditId: null, cliInfoId: null }));
   openSettings = () => this.setState({ settingsOpen: true, settingsTab: 'account' });
   closeSettings = () => this.setState({ settingsOpen: false, langMenuOpen: false });
   toggleLangMenu = () => this.setState(st => ({ langMenuOpen: !st.langMenuOpen }));
@@ -1211,37 +1668,101 @@ class Component extends DCLogic {
   toggleLogin = () => this.setState(st => ({ loggedIn: !st.loggedIn }));
 
   PROVIDER_FORM = [
-    { key: 'provider', label: '供应商名称', kind: 'readonly' },
-    { key: 'baseUrl', label: 'API 地址', ph: 'https://api.anthropic.com', mono: true },
-    { key: 'homepage', label: '官网地址', ph: 'https://docs.example.com', mono: true },
-    { key: 'apiKey', label: 'API 密钥', ph: 'sk-...', mono: true },
-    { key: 'endpoint', label: 'API 端点（可选）', ph: '留空使用默认，如 /v1/chat/completions', mono: true, help: '覆盖平台默认端点。留空使用默认（claude: /v1/messages，codex: /responses）。GLM 模型请使用 /v1/chat/completions' },
-    { key: 'upstreamProtocol', label: '上游协议', kind: 'select', options: ['自动检测', 'openai_chat', 'claude_messages', 'codex_responses'], help: '指定上游 API 的协议类型。自动检测时根据端点判断；openai_chat 时自动转换请求与响应格式' },
-    { key: 'authType', label: '认证方式', kind: 'select', options: ['Bearer', 'X-API-Key', '自定义'], help: '默认使用 Bearer。Anthropic 官方 API 请选择 X-API-Key。如需自定义请在下方输入 Header 名称' },
-    { key: 'customHeader', label: '自定义 Header 名称', ph: '如 Authorization、X-Custom-Key', mono: true },
-    { key: 'icon', label: '图标', kind: 'select', options: ['默认', 'anthropic', 'openai', 'google', 'adobe'] },
-    { key: 'level', label: '优先级分组', kind: 'select', options: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'], help: '数字越小优先级越高，Level 1 会被优先尝试，失败后依次尝试 Level 2、Level 3 等' },
+    { key: 'provider', label: '供应商名称', kind: 'readonly', tier: 'optional' },
+    { key: 'targets', label: '适用客户端', kind: 'apps', wide: true, required: true, tier: 'essential', help: '这份配置对哪些 CLI 生效，可多选。至少选择一个。' },
+    { key: 'apiKey', label: 'API 密钥', ph: 'sk-...', mono: true, required: true, wide: true, tier: 'essential' },
+    { key: 'baseUrl', label: 'API 地址', ph: 'https://api.anthropic.com', mono: true, tier: 'optional', help: '上游供应商的真实地址，留空使用默认。Claude / Codex 始终指向本地代理，代理再按 Level 顺序把请求转发到这里。' },
+    { key: 'homepage', label: '官网地址', ph: 'https://docs.example.com', mono: true, tier: 'optional' },
+    { key: 'endpoint', label: 'API 端点', ph: '留空使用默认，如 /v1/chat/completions', mono: true, tier: 'optional', help: '覆盖平台默认端点。留空使用默认（claude: /v1/messages，codex: /responses）。GLM 模型请使用 /v1/chat/completions' },
+    { key: 'upstreamProtocol', label: '上游协议', kind: 'select', tier: 'optional', options: ['自动检测', 'openai_chat', 'claude_messages', 'codex_responses'], help: '指定上游 API 的协议类型。自动检测时根据端点判断；openai_chat 时自动转换请求与响应格式' },
+    { key: 'authType', label: '认证方式', kind: 'select', tier: 'optional', options: ['Bearer', 'X-API-Key', '自定义'], help: '默认使用 Bearer。Anthropic 官方 API 请选择 X-API-Key。' },
+    { key: 'customHeader', label: '自定义 Header 名称', ph: '如 Authorization、X-Custom-Key', mono: true, tier: 'optional' },
+    { key: 'icon', label: '图标', kind: 'select', tier: 'optional', options: ['默认', 'anthropic', 'openai', 'google', 'adobe'] },
+    { key: 'level', label: '优先级分组', kind: 'select', tier: 'optional', options: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'], help: '数字越小优先级越高，Level 1 会被优先尝试，失败后依次尝试 Level 2、Level 3 等' },
   ];
-  defaultProviderConfig = (id) => ({ provider: id, name: id, baseUrl: 'https://api.example.com', homepage: '', apiKey: '', endpoint: '', upstreamProtocol: '自动检测', authType: 'Bearer', customHeader: '', icon: '默认', level: '1', whitelist: [], mapping: [], enabled: true, healthCheck: false });
-  addWhitelist = () => this.setState(st => { const v = st.cliEditVals; const d = (v.wlDraft || '').trim(); if (!d) return {}; return { cliEditVals: { ...v, whitelist: [...(v.whitelist || []), d], wlDraft: '' } }; });
-  removeWhitelist = (i) => this.setState(st => { const wl = [...(st.cliEditVals.whitelist || [])]; wl.splice(i, 1); return { cliEditVals: { ...st.cliEditVals, whitelist: wl } }; });
-  addMapping = () => this.setState(st => { const v = st.cliEditVals; const f = (v.mapFromDraft || '').trim(); const t = (v.mapToDraft || '').trim(); if (!f || !t) return {}; return { cliEditVals: { ...v, mapping: [...(v.mapping || []), { from: f, to: t }], mapFromDraft: '', mapToDraft: '' } }; });
-  removeMapping = (i) => this.setState(st => { const m = [...(st.cliEditVals.mapping || [])]; m.splice(i, 1); return { cliEditVals: { ...st.cliEditVals, mapping: m } }; });
-  toggleEditFlag = (key) => this.setState(st => ({ cliEditVals: { ...st.cliEditVals, [key]: !st.cliEditVals[key] } }));
-  openCliEdit = (id) => this.setState(st => ({ cliEditId: id, cliEditVals: { ...(st.installed[id] && st.installed[id].config ? st.installed[id].config : this.defaultProviderConfig(id)) } }));
+  defaultProviderConfig = (id) => ({ provider: id, name: id, targets: ['claude', 'codex'], baseUrl: 'https://api.example.com', homepage: '', apiKey: '', endpoint: '', upstreamProtocol: '自动检测', authType: 'Bearer', customHeader: '', icon: '默认', level: '1', whitelist: [], mapping: [], enabled: true, healthCheck: false });
+  appIcon = (id, on) => {
+    const h = React.createElement;
+    const dim = { filter: on ? 'none' : 'grayscale(1)', opacity: on ? 1 : 0.4, transition: 'all .15s' };
+    if (id === 'claude') {
+      return h('svg', { width: 26, height: 26, viewBox: '0 0 24 24', style: dim },
+        Array.from({ length: 8 }).map((_, i) => h('rect', { key: i, x: 11.1, y: 2.4, width: 1.8, height: 19.2, rx: 0.9, fill: '#D97757', transform: 'rotate(' + (i * 22.5) + ' 12 12)' })));
+    }
+    return h('svg', { width: 24, height: 24, viewBox: '0 0 24 24', style: dim },
+      Array.from({ length: 6 }).map((_, i) => h('rect', { key: i, x: 10.4, y: 2.6, width: 3.2, height: 8.4, rx: 1.6, fill: on ? '#ececf1' : '#a1a1aa', transform: 'rotate(' + (i * 60) + ' 12 12)' })));
+  };
+  toggleTarget = (app) => this.setState(st => { const cur = st.cliEditVals.targets || []; const next = cur.includes(app) ? cur.filter(a => a !== app) : [...cur, app]; return { cliEditVals: { ...st.cliEditVals, targets: next }, errorField: st.errorField === 'targets' ? null : st.errorField, configError: st.errorField === 'targets' ? '' : st.configError }; }, this._autosave);
+  _mapEditField = (fd, st) => ({
+    label: fd.label, ph: fd.ph || '', help: fd.help || '', hasHelp: !!fd.help, value: st.cliEditVals[fd.key] || '',
+    onHelpEnter: (e) => { const r = e.currentTarget.getBoundingClientRect(); this.setState({ helpTip: { text: fd.help, x: Math.round(r.left + r.width / 2), y: Math.round(r.bottom + 6) } }); },
+    onHelpLeave: () => this.setState({ helpTip: null }),
+    isSelect: fd.kind === 'select', isText: fd.kind !== 'select' && fd.kind !== 'readonly' && fd.kind !== 'apps', isReadonly: fd.kind === 'readonly', isApps: fd.kind === 'apps',
+    isRequired: !!fd.required, hasError: st.errorField === fd.key, dataField: fd.key,
+    gridCol: fd.wide ? '1 / -1' : 'auto',
+    inputBorder: st.errorField === fd.key ? 'var(--red)' : 'var(--border-strong)',
+    errText: fd.kind === 'apps' ? '请至少选择一个适用客户端' : fd.label + ' 为必填项',
+    onInput: (e) => this.setCliEditVal(fd.key, e.target.value),
+    optionValues: fd.options || [], onSelect: (e) => this.setCliEditVal(fd.key, e.target.value),
+    appOpts: [{ id: 'claude', label: 'Claude Code' }, { id: 'codex', label: 'Codex' }].map(a => { const on = (st.cliEditVals.targets || []).includes(a.id); return { label: a.label, active: on, icon: this.appIcon(a.id, on), border: on ? 'var(--accent)' : 'var(--border)', bg: on ? 'var(--accent-soft)' : 'var(--panel)', onClick: () => this.toggleTarget(a.id) }; }),
+    options: (fd.options || []).map(op => ({ label: op, active: (st.cliEditVals[fd.key] || '') === op, bg: (st.cliEditVals[fd.key] || '') === op ? 'var(--accent-soft)' : 'var(--panel)', fg: (st.cliEditVals[fd.key] || '') === op ? 'var(--accent)' : 'var(--text-2)', border: (st.cliEditVals[fd.key] || '') === op ? 'var(--accent)' : 'var(--border-strong)', onClick: () => this.setCliEditVal(fd.key, op) })),
+  });
+  addWhitelist = () => this.setState(st => { const v = st.cliEditVals; const d = (v.wlDraft || '').trim(); if (!d) return {}; return { cliEditVals: { ...v, whitelist: [...(v.whitelist || []), d], wlDraft: '' } }; }, this._autosave);
+  removeWhitelist = (i) => this.setState(st => { const wl = [...(st.cliEditVals.whitelist || [])]; wl.splice(i, 1); return { cliEditVals: { ...st.cliEditVals, whitelist: wl } }; }, this._autosave);
+  addMapping = () => this.setState(st => { const v = st.cliEditVals; const f = (v.mapFromDraft || '').trim(); const t = (v.mapToDraft || '').trim(); if (!f || !t) return {}; return { cliEditVals: { ...v, mapping: [...(v.mapping || []), { from: f, to: t }], mapFromDraft: '', mapToDraft: '' } }; }, this._autosave);
+  removeMapping = (i) => this.setState(st => { const m = [...(st.cliEditVals.mapping || [])]; m.splice(i, 1); return { cliEditVals: { ...st.cliEditVals, mapping: m } }; }, this._autosave);
+  toggleEditFlag = (key) => this.setState(st => ({ cliEditVals: { ...st.cliEditVals, [key]: !st.cliEditVals[key] } }), this._autosave);
+  openCliEdit = (id) => this.setState(st => ({ cliEditId: id, cliInfoId: null, proxySelected: false, localSel: null, configSaved: false, configError: '', errorField: null, cliSaving: false, cliSaved: true, web: { ...st.web, sel: id }, cliEditVals: { ...(st.installed[id] && st.installed[id].config ? st.installed[id].config : this.defaultProviderConfig(id)) } }));
+  openCliInfo = (id) => this.setState(st => ({ cliInfoId: id, cliEditId: null, proxySelected: false, localSel: null, web: { ...st.web, sel: id } }));
+  buildProviderInfo = (id) => {
+    if (!id) return null;
+    const p = this.decorate(this.pkg(id));
+    if (!p) return null;
+    const models = p.supportedModels || [];
+    const configCount = Object.keys(this.state.installed).filter(k => (this.state.providerParents[k] || null) === id).length;
+    return {
+      id, name: p.id, author: p.author, glyph: p.glyph, softBg: p.softBg, color: p.color,
+      desc: p.desc, ver: 'v' + p.ver, dl: p.dl, rating: p.rating, reviews: p.reviews,
+      tierLabel: p.tierLabel, tierColor: p.tierColor, tierSoft: p.tierSoft, showTier: p.tierKey !== 'community',
+      homepage: 'https://' + p.id + '.example.com', metaLabel: p.metaLabel || '延迟', meta: p.meta,
+      tags: (p.tags || []).map(t => ({ label: t })), models: models.map(m => ({ label: m })), hasModels: models.length > 0,
+      configCount, hasConfigs: configCount > 0, configCountLabel: '已有 ' + configCount + ' 份配置',
+      onNewConfig: () => this.duplicateProvider(id),
+    };
+  };
   closeCliEdit = () => this.setState({ cliEditId: null });
-  setCliEditVal = (key, value) => this.setState(st => ({ cliEditVals: { ...st.cliEditVals, [key]: value } }));
+  setCliEditVal = (key, value) => this.setState(st => ({ cliEditVals: { ...st.cliEditVals, [key]: value }, errorField: st.errorField === key ? null : st.errorField, configError: st.errorField === key ? '' : st.configError }), this._autosave);
+  _autosave = () => {
+    if (this._saveTimer) clearTimeout(this._saveTimer);
+    this.setState({ cliSaving: true, cliSaved: false });
+    this._saveTimer = setTimeout(() => {
+      const id = this.state.cliEditId; if (!id) return;
+      const v = this.state.cliEditVals;
+      const { wlDraft, mapFromDraft, mapToDraft, cliConfigOpen, ...clean } = v;
+      this.setState(st => ({ installed: { ...st.installed, [id]: { ...st.installed[id], config: { ...clean } } }, cliSaving: false, cliSaved: true }));
+    }, 500);
+  };
+  _flashError = (msg, field) => {
+    if (this._errTimer) clearTimeout(this._errTimer);
+    this.setState({ configError: msg, errorField: field, configSaved: false });
+    this._errTimer = setTimeout(() => this.setState({ configError: '' }), 3200);
+  };
   saveCliEdit = () => {
     const id = this.state.cliEditId; const v = this.state.cliEditVals;
+    if (!(v.name || '').trim()) { this._flashError('请先填写配置名称', 'name'); const el = document.getElementById('cli-config-name'); if (el) el.focus(); return; }
+    const missing = this.PROVIDER_FORM.find(fd => fd.required && (fd.kind === 'apps' ? !((v[fd.key] || []).length) : !(v[fd.key] || '').trim()));
+    if (missing) { this._flashError(missing.kind === 'apps' ? '请至少选择一个适用客户端' : missing.label + ' 为必填项，填写后才能生效', missing.key); return; }
     const { wlDraft, mapFromDraft, mapToDraft, cliConfigOpen, ...clean } = v;
-    this.setState(st => ({ installed: { ...st.installed, [id]: { ...st.installed[id], config: { ...clean } } }, cliEditId: null }));
+    this.setState(st => ({ installed: { ...st.installed, [id]: { ...st.installed[id], config: { ...clean } } }, configSaved: true, configError: '', errorField: null }));
     this.pushTerm([{ text: '$ agent-store config ' + id + ' --set', color: '#c7c7d0' }, { text: '✓ 已更新 ' + id + ' 的供应商配置', color: '#3ad29f' }]);
+    if (this._savedTimer) clearTimeout(this._savedTimer);
+    this._savedTimer = setTimeout(() => this.setState({ configSaved: false }), 2600);
   };
 
   install = (id) => {
     const p = this.pkg(id);
     this.setState(st => { if (st.installed[id]) return {}; const apps = { claude: false, codex: false }; apps[st.cli.app] = true; const entry = { ver: p.ver, apps }; if (p.type === 'provider') entry.config = this.defaultProviderConfig(id); return { installed: { ...st.installed, [id]: entry } }; });
     this.pushTerm([{ text: '$ ' + this.installCmd(p), color: '#c7c7d0' }, { text: '✓ 已安装 ' + id + '@' + p.ver + ' → ' + this.APPS.find(a => a.key === this.state.cli.app).label, color: '#3ad29f' }]);
+    if (p.type === 'provider' && this.state.surface === 'cli') this.openCliEdit(id);
   };
   uninstall = (id) => { this.setState(st => { const cp = { ...st.installed }; delete cp[id]; return { installed: cp }; }); this.pushTerm([{ text: '$ agent-store remove ' + id, color: '#c7c7d0' }, { text: '✓ 已移除 ' + id, color: '#f0b34a' }]); };
   toggleEnable = (id) => {
@@ -1327,11 +1848,20 @@ class Component extends DCLogic {
   }
 
   I18N = {
+    '本地代理':'Local Proxy','运行中':'Running','已停止':'Stopped','请求日志':'Request Log','已添加':'Added','配置':'Configure',
+    '本地代理 · 请求日志':'Local Proxy · Request Log',
+    '按 Level 顺序转发，失败自动降级':'Forwards by Level order, auto-fallback on failure',
+    '降级':'fallback',
+    '点击复制':'Click to copy','已复制为':'Copied as',
+    '上游供应商的真实地址。Claude / Codex 始终指向本地代理，代理再按 Level 顺序把请求转发到这里。':'The real upstream provider address. Claude / Codex always point at the local proxy, which forwards requests here in Level order.',
     'CLI 客户端':'CLI Client','CLI 配置':'CLI Config','Language · 目前支持中英文，更多语言即将上线':'Language · Chinese & English for now, more coming soon','Pro · 无限私有资源':'Pro · Unlimited private resources','Web 端 · Store':'Web · Store','一键上架。':'publish in one command.','下载':'Downloads','不可修改':'Read-only','主题':'Theme','仅已验证':'Verified only','从左侧选择一个资源查看详情':'Select a resource on the left to view its details','保存':'Save','全部更新':'Update all','写评价':'Write a review','分类':'Category','分类 · Category':'Category','切换':'Switch','发布':'Publish','发布你的资源':'Publish your resource','发布的资源':'Published','发布资源到 Store':'Publish a resource to the Store','发现':'Discover','取消':'Cancel','可用性监控':'Availability monitoring','启用后会定期健康检查，监控此供应商的可用性':"When on, periodically health-checks this provider's availability",'安装':'Install','安装信息':'Install info','安装到 CLI 客户端':'Install to CLI client','已安装':'Installed','已安装到 CLI 客户端':'Installed to CLI client','已装':'Installed','市场':'Marketplace','平均分':'Avg rating','总下载':'Total downloads','我的收藏':'My favorites','把 CLI 请求的模型名改写为供应商实际模型。支持精确、通配符与前缀映射。':"Rewrite the model name in CLI requests to the provider's real model. Supports exact, wildcard and prefix mapping.",'探索':'Explore','推荐':'Recommended','文档':'Docs','更新时间':'Updated','最近发布':'Latest release','本周精选':'Featured this week','来自使用过该资源的开发者':'From developers who have used this resource','标识':'Identifier','检查更新':'Check for updates','模型映射':'Model mapping','模型白名单':'Model allowlist','没有找到匹配的资源':'No matching resources found','添加':'Add','版本':'Version','状态':'Status','用':'Use','界面语言':'Interface language','留空表示不限制。支持 claude-* 前缀匹配、anthropic/claude-* 带供应商前缀匹配。':'Leave blank for no limit. Supports claude-* prefix and anthropic/claude-* vendor-prefixed matching.','登录后可发布私有资源、跨设备同步已安装的技能 / MCP / 供应商 / 插件，并接收更新推送。':'Sign in to publish private resources, sync installed skills / MCP / providers across devices, and receive update notifications.','目标应用':'Target app','订阅计划':'Subscription plan','设置':'Settings','资源':'Resources','资源类型':'Resource type','针对目标 CLI 的额外覆盖项（如 Codex 的':"Extra overrides for the target CLI (e.g. Codex's",'默认目标应用':'Default target app','）。留空则沿用全局默认。':'). Leave blank to use the global default.',
     'API 地址':'API URL','探索':'Explore','本周精选':'Featured','编辑推荐':'Editor\'s Pick','热门上升':'Trending','API 密钥':'API key','API 端点（可选）':'API endpoint (optional)','API_TOKEN=xxx，多个用逗号分隔':'API_TOKEN=xxx, comma-separated for multiple','Authorization: Bearer xxx，多个用逗号分隔':'Authorization: Bearer xxx, comma-separated for multiple','GitHub 仓库':'GitHub repo','Issues、PR、仓库与代码搜索的完整 GitHub API 封装。':'A full GitHub API wrapper for issues, PRs, repos and code search.','Marketplace 页面':'Marketplace page','OWASP Top 10 防护、鉴权模式、密钥管理与依赖审计。':'OWASP Top 10 protection, auth patterns, secrets management and dependency auditing.','YLS AGI 中转端点，兼容 Claude 与 Codex，支持模型映射与多协议自动转换。':'YLS AGI relay endpoint, compatible with Claude and Codex, with model mapping and multi-protocol auto-conversion.','claude-sonnet-4, gpt-4o（逗号分隔）':'claude-sonnet-4, gpt-4o (comma-separated)','config · 注册到已启用的工具目录':'config · register into enabled tools','config · 写入端点预设（baseUrl / apiKey / model）':'config · write endpoint preset (baseUrl / apiKey / model)','script · 同步到 Claude 与 Codex 配置':'script · sync to Claude and Codex config','script · 拉取并构建服务器二进制':'script · fetch and build the server binary','✓ 已登录 as you@dev · 5 个包已同步':'✓ Signed in as you@dev · 5 packages synced','一句话描述这个资源做什么…':'Describe in one line what this resource does…','一套让 agent 学会规划、验证与自我纠错的元技能，显著提升复杂任务成功率。':'A set of meta-skills that teach agents to plan, verify and self-correct — boosting success on complex tasks.','上游协议':'Upstream protocol','下载地址 (contentUrl)':'Download URL (contentUrl)','亮色':'Light','企业级托管的 Claude 端点，IAM 鉴权与私有网络接入。':'Enterprise-hosted Claude endpoint with IAM auth and private-network access.','优先级分组':'Priority grouping','传输方式':'Transport','供应商':'Provider','供应商名称':'Provider name','修复若干问题':'Fixed various issues','全部':'All','关于':'About','功能齐全，希望能补充更多示例。':'Feature-complete — would love more examples.','即将支持':'Coming soon','只读查询任意 PostgreSQL，自动 schema 反射与结果分页。':'Read-only queries on any PostgreSQL, with automatic schema reflection and result pagination.','可更新':'Updatable','启动命令':'Start command','团队已全面切换到它来管理，稳定。':'Our team fully switched to it for management — rock solid.','图标':'Icon','大小':'Size','如 Authorization、X-Custom-Key':'e.g. Authorization, X-Custom-Key','安装后 agent 会在相关任务中自动加载该技能，无需额外配置。':'After install the agent auto-loads this skill in relevant tasks — no extra config.','安装后作为可切换的 API 端点预设，一键切换即可对全部会话生效。':'Installed as a switchable API endpoint preset; one switch applies to all sessions.','安装后自动注册为 MCP 服务器，agent 可直接调用其暴露的工具。':'Auto-registered as an MCP server after install; the agent can call its exposed tools directly.','安装方式':'Install method','安装步骤':'Install steps','安装脚本':'Install script','官方':'Official','官网':'Website','官网 / 文档':'Website / Docs','官网地址':'Website URL','审核中':'Pending','工具':'Tools','已发布':'Published','已启用':'Enabled','已拒绝':'Rejected','已登录':'Signed in','已禁用':'Disabled','已验证':'Verified','延迟':'Latency','开箱即用，和 Claude Code 配合完美。':'Works out of the box — pairs perfectly with Claude Code.','当前最新版本':'Current latest version','所有包均为最新':'All packages are up to date','技能':'Skill','技能名称':'Skill name','抽取、拆分、合并 PDF，填写表单并提取结构化数据。':'Extract, split and merge PDFs, fill forms and pull structured data.','指定上游 API 的协议类型。自动检测时根据端点判断；openai_chat 时自动转换请求与响应格式':'Specify the upstream API protocol. Auto-detect infers it from the endpoint; openai_chat auto-converts request/response formats.','支持的模型':'Supported models','数字越小优先级越高，Level 1 会被优先尝试，失败后依次尝试 Level 2、Level 3 等':'Lower number = higher priority. Level 1 is tried first, then Level 2, Level 3, and so on.','整体不错，偶尔需要手动重连一次。':'Good overall — occasionally needs a manual reconnect.','新':'New','暗色':'Dark','更新':'Updates','更新很勤，维护者响应 issue 很快。':'Updated frequently — maintainer responds to issues fast.','最热门':'Most popular','最近更新':'Recently updated','服务器名称':'Server name','服务地址 (URL)':'Server address (URL)','未启用':'Off','未登录':'Not signed in','本地 Ollama 端点预设，零延迟离线运行开源模型。':'Local Ollama endpoint preset — run open-source models offline with zero latency.','概览':'Overview','概述':'Overview','比自己手写配置省事太多，强烈推荐。':'So much easier than hand-writing config — highly recommended.','浏览商店':'Browse store','源码仓库 (GitHub)':'Source repo (GitHub)','环境变量（可选）':'Environment variables (optional)','留空使用默认，如 /v1/chat/completions':'Leave blank for default, e.g. /v1/chat/completions','登录':'Sign in','社区':'Community','稳定性与性能优化':'Stability and performance improvements','简介':'Description','类型':'Type','精选':'Featured','组件架构、设计系统与 WCAG 2.1 AA 无障碍规范落地。':'Component architecture, design systems and WCAG 2.1 AA accessibility.','聚合 300+ 模型的中转端点，自动路由与失败回退。':'A relay endpoint aggregating 300+ models with auto-routing and failover.','能用，但大项目下稍慢，期待优化。':'Works, but a bit slow on big projects — hoping for optimization.','自动检测':'Auto-detect','自定义':'Custom','自定义 Header 名称':'Custom header name','自定义安装脚本':'Custom install script','覆盖平台默认端点。留空使用默认（claude: /v1/messages，codex: /responses）。GLM 模型请使用 /v1/chat/completions':'Override the platform default endpoint. Leave blank for default (claude: /v1/messages, codex: /responses). Use /v1/chat/completions for GLM models.','认证方式':'Auth method','评价':'Reviews','评分最高':'Highest rated','请求头 Headers（可选）':'Request headers (optional)','读写本地文件系统，带沙箱路径白名单与只读模式。':'Read/write the local filesystem with sandboxed path allowlist and read-only mode.','账户':'Account','退出登录':'Sign out','适用场景':'Use cases','通用':'General','集成顺滑，文档清晰，装上就能用。':'Smooth integration, clear docs — works right after install.','默认':'Default','默认使用 Bearer。Anthropic 官方 API 请选择 X-API-Key。如需自定义请在下方输入 Header 名称':"Uses Bearer by default. Choose X-API-Key for Anthropic's official API. To customize, enter a header name below.",'默认（复制到 skills 目录）':'Default (copy to skills dir)','（暂无描述）':'(No description)','为任意库拉取版本精确的最新文档上下文，减少幻觉。':'Pull version-accurate, up-to-date docs context for any library to reduce hallucination.','搜索 providers、skills、MCP…':'Search providers, skills, MCP…','搜索，或用 @ 过滤…':'Search, or filter with @…','清除':'Clear','筛选过滤':'Filter','配置名称':'Config name','输入模型名称，如 claude-*':'Enter a model name, e.g. claude-*','CLI 模型（如 claude-*）':'CLI model (e.g. claude-*)','供应商模型（如 kimi-k2）':'Provider model (e.g. kimi-k2)','点击可修改':'click to edit',
     '1 个月前':'1 month ago','1 周前':'1 week ago','1 小时前':'1 hour ago','1 年前':'1 year ago','1周前':'1w ago','1月前':'1mo ago','2 周前':'2 weeks ago','2 天前':'2 days ago','2 年前':'2 years ago','2周前':'2w ago','2天前':'2d ago','2月前':'2mo ago','3 个月前':'3 months ago','3 小时前':'3 hours ago','3周前':'3w ago','5 分钟前':'5 minutes ago','半年前':'6 months ago','今天':'Today','刚刚':'Just now'
   };
   I18N_PATTERNS = [
+    [/✓ 本地代理已启动 · (\S+)/, '✓ Local proxy started · $1'],
+    [/⏸ 本地代理已停止 · Claude\/Codex 请求将直连上游/, '⏸ Local proxy stopped · Claude/Codex requests will go direct to upstream'],
+    [/✓ 已复制代理地址 (\S+)/, '✓ Copied proxy address $1'],
     [/^(全部|供应商|技能|MCP|我的收藏)\s*·\s*(\S+)\s*个结果$/, (m,c,n)=>(({ '全部':'All','供应商':'Providers','技能':'Skills','MCP':'MCP','我的收藏':'My favorites' })[c])+' · '+n+' results'],
     [/成功率\s*([\d.]+)%\s*·\s*请求数\s*(\S+)\s*·\s*Tokens\s*(\S+)\s*·\s*花费\s*(\S+)/, 'Success $1% · $2 reqs · $3 tokens · $4 spent'],
     [/成功率\s*([\d.]+)%\s*·\s*调用\s*(\S+)\s*次/, 'Success $1% · $2 calls'],
@@ -1405,9 +1935,32 @@ class Component extends DCLogic {
       if (!document.hidden && this.state.surface === 'web' && !this._anyOverlay()) this.setState(st => ({ featIdx: (st.featIdx || 0) + 1 }));
     }, 5000);
   };
-  componentDidMount() { this._i18nWalk(); this._restartFeatTimer(); }
+  componentDidMount() {
+    this._i18nWalk(); this._restartFeatTimer();
+    const root = document.getElementById('dc-root') || document.body;
+    if (root && !this._cfieldBound) {
+      this._cfieldBound = true;
+      root.addEventListener('focusin', (e) => {
+        const f = e.target && e.target.closest && e.target.closest('[data-cfield]');
+        this._activeField = f ? f.getAttribute('data-cfield') : null;
+      }, true);
+      root.addEventListener('input', (e) => {
+        const f = e.target && e.target.closest && e.target.closest('[data-cfield]');
+        if (f) { this._activeField = f.getAttribute('data-cfield'); this._caret = e.target.selectionStart; this._lastType = Date.now(); }
+      }, true);
+    }
+  }
   componentWillUnmount() { if (this._featTimer) clearInterval(this._featTimer); }
-  componentDidUpdate() { this._i18nWalk(); }
+  componentDidUpdate() {
+    this._i18nWalk();
+    if (this.state.cliEditId && this._lastEditId !== this.state.cliEditId) { this._lastEditId = this.state.cliEditId; const el = document.getElementById('cli-config-name'); if (el) { el.focus(); } }
+    else if (this.state.cliEditId && this._activeField && (Date.now() - (this._lastType || 0) < 1500) && (!document.activeElement || document.activeElement === document.body)) {
+      const root = document.getElementById('dc-root') || document.body;
+      const el = root && root.querySelector('[data-cfield="' + this._activeField + '"]');
+      if (el) { el.focus(); if (this._caret != null && el.setSelectionRange) { try { el.setSelectionRange(this._caret, this._caret); } catch (_) {} } }
+    }
+    if (!this.state.cliEditId) this._lastEditId = null;
+  }
 
   renderVals() {
     const st = this.state;
@@ -1494,6 +2047,7 @@ class Component extends DCLogic {
     // ===== CLI =====
     const cliApps = this.APPS.map(a => ({ ...a, active: a.key === st.cli.app, rowBg: a.key === st.cli.app ? 'var(--accent-soft)' : 'transparent', chipBg: a.key === st.cli.app ? 'var(--accent-soft)' : 'transparent', chipFg: a.key === st.cli.app ? 'var(--accent)' : 'var(--text-2)', chipBorder: a.key === st.cli.app ? 'var(--accent)' : 'var(--border)', iconOpacity: a.key === st.cli.app ? '1' : '0.4', ring: a.key === st.cli.app ? '0 0 0 2px var(--accent)' : 'none', isClaude: a.key === 'claude', isCodex: a.key === 'codex', isGemini: a.key === 'gemini', isOpenCode: a.key === 'opencode', onSelect: () => this.setCliApp(a.key) }));
     const cf = st.cli.filter;
+    const isProviderCat = cf === 'provider';
     const matchFilter = (id) => { const p = this.pkg(id); return cf === 'all' || (p && p.type === cf); };
     const installedIds = Object.keys(st.installed).filter(matchFilter);
     const updatesIds = Object.keys(st.installed).filter(id => this.pkg(id) && st.installed[id].ver !== this.pkg(id).ver && matchFilter(id));
@@ -1504,14 +2058,15 @@ class Component extends DCLogic {
     ];
     const filterChips = [{ key: 'provider', label: '供应商' }, { key: 'skill', label: '技能' }, { key: 'mcp', label: 'MCP' }].map(c => {
       c = { ...c, glyph: this.icon(c.key) };
-      const active = cf === c.key;
+      const active = cf === c.key && st.cli.view !== 'overview';
       return { ...c, active, bg: active ? 'var(--accent-soft)' : 'var(--panel)', fg: active ? 'var(--accent)' : 'var(--text-2)', border: active ? 'var(--accent)' : 'var(--border)', navBg: active ? 'var(--accent-soft)' : 'transparent', navFg: active ? 'var(--accent)' : 'var(--text-2)', railColor: active ? 'var(--accent)' : 'var(--text-3)', railBg: active ? 'var(--accent-soft)' : 'transparent', railBar: active ? 'var(--accent)' : 'transparent', onClick: () => this.setCliFilter(c.key) };
     });
     const cliNav = navDef.map(n => { const active = st.cli.section === n.key; return { ...n, bg: active ? 'var(--accent-soft)' : 'transparent', fg: active ? 'var(--accent)' : 'var(--text-2)', onClick: () => this.setCliSection(n.key) }; });
 
-    const installedList = installedIds.map(id => { const p = this.decorate(this.pkg(id)); const inst = st.installed[id]; const enabled = !!inst.apps[st.cli.app]; const outdated = inst.ver !== p.ver; return { ...p, outdated, latest: 'v' + p.ver, installLine: this.statLine(p), selected: id === w.sel, rowSelBg: id === w.sel ? 'var(--accent-soft)' : 'transparent', rowSelBar: id === w.sel ? 'var(--accent)' : 'transparent', enabled, enabledLabel: enabled ? '已启用' : '未启用', knobJustify: enabled ? 'flex-end' : 'flex-start', trackBg: enabled ? 'var(--accent)' : 'var(--border-strong)', onToggle: (e) => { e.stopPropagation(); this.toggleEnable(id); }, onUninstall: (e) => { e.stopPropagation(); this.uninstall(id); }, isProvider: p.type === 'provider', onEdit: (e) => { e.stopPropagation(); this.openCliEdit(id); }, onDuplicate: (e) => { e.stopPropagation(); this.duplicateProvider(id); }, onOpen: () => { this.openDetail(id); } }; });
-    const browseList = base.filter(p => cf === 'all' || p.type === cf).map(p => { const d = this.decorate(p); return { ...d, selected: p.id === w.sel, rowSelBg: p.id === w.sel ? 'var(--accent-soft)' : 'transparent', rowSelBar: p.id === w.sel ? 'var(--accent)' : 'transparent', onInstall: (e) => { if (e) e.stopPropagation(); this.install(p.id); }, onOpen: () => this.openDetail(p.id) }; });
-    const recommendedList = browseList.filter(p => p.notInstalled);
+    const installedListFlat = installedIds.map(id => { const p = this.decorate(this.pkg(id)); const inst = st.installed[id]; const enabled = !!inst.apps[st.cli.app]; const outdated = inst.ver !== p.ver; const isProvider = p.type === 'provider'; const parentId = st.providerParents[id] || null; const isChildConfig = isProvider && !!parentId; const onOpen = isChildConfig ? () => { this.openCliEdit(id); this.setWeb({ sel: id }); } : isProvider ? () => { this.openCliInfo(id); this.setWeb({ sel: id }); } : () => this.openDetail(id); const isBeingEdited = st.cliEditId === id; const configName = isChildConfig ? (isBeingEdited ? (st.cliEditVals.name || '未命名配置') : ((inst.config && inst.config.name) || '未命名配置')) : p.name; return { ...p, name: configName, outdated, latest: 'v' + p.ver, installLine: this.statLine(p), selected: id === w.sel, rowSelBg: id === w.sel ? 'var(--accent-soft)' : 'transparent', rowSelBar: id === w.sel ? 'var(--accent)' : 'transparent', enabled, enabledLabel: enabled ? '已启用' : '未启用', knobJustify: enabled ? 'flex-end' : 'flex-start', trackBg: enabled ? 'var(--accent)' : 'var(--border-strong)', onToggle: (e) => { e.stopPropagation(); this.toggleEnable(id); }, onUninstall: (e) => { e.stopPropagation(); this.uninstall(id); }, isProvider, parentId, isChildConfig, onEdit: (e) => { e.stopPropagation(); this.openCliEdit(id); }, onDuplicate: (e) => { e.stopPropagation(); this.duplicateProvider(id); }, onOpen }; });
+    const installedList = installedListFlat.filter(p => !p.parentId).map(p => { const children = installedListFlat.filter(c => c.parentId === p.id); return { ...p, children, hasChildren: children.length > 0 }; });
+    const browseList = base.filter(p => cf === 'all' || p.type === cf).map(p => { const d = this.decorate(p); return { ...d, selected: p.id === w.sel, rowSelBg: p.id === w.sel ? 'var(--accent-soft)' : 'transparent', rowSelBar: p.id === w.sel ? 'var(--accent)' : 'transparent', onInstall: (e) => { if (e) e.stopPropagation(); if (p.type === 'provider') this.duplicateProvider(p.id); else this.install(p.id); }, onOpen: p.type === 'provider' ? () => { this.openCliInfo(p.id); this.setWeb({ sel: p.id }); } : () => this.openDetail(p.id), installLabel: p.type === 'provider' ? '配置' : '安装' }; });
+    const recommendedList = browseList.filter(p => p.notInstalled || p.type === 'provider');
     const lf = st.cli.listFilter;
     let instView = installedList, recView = recommendedList;
     if (lf === 'updates') instView = installedList.filter(p => p.outdated);
@@ -1529,11 +2084,68 @@ class Component extends DCLogic {
     const updatesList = updatesIds.map(id => { const p = this.decorate(this.pkg(id)); return { ...p, current: 'v' + st.installed[id].ver, latest: 'v' + p.ver, onUpdate: () => this.update(id) }; });
 
     const cliHeaders = {
-      installed: { title: '已安装', sub: app.label + ' 上共 ' + installedList.filter(p => p.enabled).length + '/' + installedList.length + ' 个已启用' },
+      installed: { title: '已添加', sub: app.label + ' 上共 ' + installedList.filter(p => p.enabled).length + '/' + installedList.length + ' 个已启用' },
       browse: { title: '浏览商店', sub: '直接从 registry 安装到本地并注册到 ' + app.label },
       updates: { title: '更新', sub: updatesIds.length > 0 ? (updatesIds.length + ' 个包有新版本') : '所有包均为最新' },
     };
     const ch = cliHeaders[st.cli.section];
+
+    // ===== OVERVIEW dashboard data =====
+    const allIds = Object.keys(st.installed);
+    const cntType = (t) => allIds.filter(id => { const p = this.pkg(id); return p && p.type === t; }).length;
+    const enabledFor = (appKey) => allIds.filter(id => st.installed[id].apps && st.installed[id].apps[appKey]).length;
+    const ovCards = [
+      { key: 'provider', label: '供应商', count: cntType('provider'), glyph: this.icon('provider'), color: this.TYPE.provider.color, soft: this.TYPE.provider.soft, onClick: () => this.gotoList('provider', 'installed') },
+      { key: 'skill', label: '技能', count: cntType('skill'), glyph: this.icon('skill'), color: this.TYPE.skill.color, soft: this.TYPE.skill.soft, onClick: () => this.gotoList('skill', 'installed') },
+      { key: 'mcp', label: 'MCP', count: cntType('mcp'), glyph: this.icon('mcp'), color: this.TYPE.mcp.color, soft: this.TYPE.mcp.soft, onClick: () => this.gotoList('mcp', 'installed') },
+    ];
+    const ovAppRows = this.APPS.filter(a => a.key === 'claude' || a.key === 'codex').map(a => ({ key: a.key, label: a.label, isClaude: a.key === 'claude', isCodex: a.key === 'codex', count: enabledFor(a.key), active: a.key === st.cli.app, dotBg: a.key === st.cli.app ? 'var(--accent)' : 'var(--text-3)', onClick: () => { this.setCliApp(a.key); } }));
+    const ovRecentLog = this.PROXY_LOG.slice(0, 5).map(e => ({ statusColor: e.ok ? 'var(--green)' : (e.fallback ? 'var(--amber)' : 'var(--red)'), app: e.app, isClaude: e.app === 'Claude Code', route: e.model + ' → ' + e.provider + (e.fallback ? '（降级）' : ''), ms: e.ms + 'ms', code: e.ok ? '200' : (e.fallback ? '200' : '502'), codeColor: e.ok ? 'var(--green)' : (e.fallback ? 'var(--amber)' : 'var(--red)') }));
+    const ovUpdates = Object.keys(st.installed).filter(id => this.pkg(id) && st.installed[id].ver !== this.pkg(id).ver).slice(0, 4).map(id => { const p = this.decorate(this.pkg(id)); return { id, name: p.name, glyph: p.glyph || this.icon(p.type), typeLabel: this.TYPE[p.type].label, soft: this.TYPE[p.type].soft, color: this.TYPE[p.type].color, current: 'v' + st.installed[id].ver, latest: 'v' + p.ver, onUpdate: () => this.update(id) }; });
+    const ovErrors = this.PROXY_LOG.filter(e => !e.ok && !e.fallback).length;
+    // ── consumption trend ──
+    const trendData = {
+      today:  { pts: [0,0,0,60,60,60,10], xl: ['21:00','22:00','23:00','00:00','01:00','02:00','03:00'], cost: '$0.01', tokens: '10.1k', reqs: '188', models: '1' },
+      week:   { pts: [42,58,35,70,64,88,52], xl: ['周一','周二','周三','周四','周五','周六','周日'], cost: '$0.34', tokens: '412k', reqs: '3,240', models: '3' },
+      month:  { pts: [120,180,150,240,210,300,260,320], xl: ['第1周','第2周','第3周','第4周','','','',''], cost: '$1.62', tokens: '2.4M', reqs: '18.7k', models: '4' },
+    };
+    const tr = trendData[st.cli.trendRange] || trendData.today;
+    const tW = 680, tH = 190, tPadL = 34, tPadR = 12, tPadT = 12, tPadB = 26;
+    const tMax = Math.max(...tr.pts, 10);
+    const niceMax = Math.ceil(tMax / 20) * 20;
+    const tPlotW = tW - tPadL - tPadR, tPlotH = tH - tPadT - tPadB;
+    const tX = (i) => tPadL + (tr.pts.length === 1 ? tPlotW / 2 : (i / (tr.pts.length - 1)) * tPlotW);
+    const tY = (v) => tPadT + tPlotH - (v / niceMax) * tPlotH;
+    const trendPoints = tr.pts.map((v, i) => tX(i).toFixed(1) + ',' + tY(v).toFixed(1)).join(' ');
+    const trendDots = tr.pts.map((v, i) => ({ cx: tX(i).toFixed(1), cy: tY(v).toFixed(1) }));
+    const trendYLabels = [0, 0.33, 0.66, 1].map(f => { const v = Math.round(niceMax * f); return { y: tY(v).toFixed(1), label: String(v), lineY: tY(v).toFixed(1) }; });
+    const trendXLabels = tr.xl.map((l, i) => ({ x: tX(i).toFixed(1), label: l })).filter(o => o.label);
+    const mkRangeTab = (k, l) => ({ key: k, label: l, onClick: () => this.setTrendRange(k),
+      bg: st.cli.trendRange === k ? 'var(--panel)' : 'transparent', fg: st.cli.trendRange === k ? 'var(--text)' : 'var(--text-3)',
+      sh: st.cli.trendRange === k ? '0 1px 3px rgba(0,0,0,0.18)' : 'none' });
+    const trend = {
+      rangeTabs: [mkRangeTab('today', '今日'), mkRangeTab('week', '近 7 天'), mkRangeTab('month', '近 30 天')],
+      viewBox: '0 0 ' + tW + ' ' + tH, points: trendPoints, dots: trendDots, yLabels: trendYLabels, xLabels: trendXLabels,
+      areaPoints: tPadL + ',' + (tPadT + tPlotH).toFixed(1) + ' ' + trendPoints + ' ' + tX(tr.pts.length - 1).toFixed(1) + ',' + (tPadT + tPlotH).toFixed(1),
+      totalReqs: tr.reqs,
+      stats: [
+        { label: '总费用', value: tr.cost, color: 'var(--accent)', soft: 'var(--accent-soft)' },
+        { label: '总 Tokens', value: tr.tokens, color: 'var(--text)', soft: 'var(--panel-2)' },
+        { label: '总请求数', value: tr.reqs, color: 'var(--green)', soft: 'var(--green-soft)' },
+        { label: '模型分布', value: tr.models, color: '#a874e0', soft: 'rgba(168,116,224,0.12)' },
+      ],
+    };
+
+    const overview = {
+      cards: ovCards, totalInstalled: allIds.length, enabledCount: enabledFor(st.cli.app), appLabel: app.label,
+      updatesCount: Object.keys(st.installed).filter(id => this.pkg(id) && st.installed[id].ver !== this.pkg(id).ver).length,
+      appRows: ovAppRows, recentLog: ovRecentLog, updates: ovUpdates, hasUpdates: ovUpdates.length > 0,
+      proxyRunning: st.proxyRunning, proxyStatus: st.proxyRunning ? '运行中' : '已停止', proxyDot: st.proxyRunning ? 'var(--green)' : 'var(--text-3)',
+      proxyAddr: '127.0.0.1:18100', proxyReq: '1,284', proxySuccess: '99.2%', errorCount: ovErrors,
+      onOpenProxy: () => { this.setCliView('list'); this.openProxyPanel(); },
+      onBrowse: () => this.gotoList('all', 'recommended'), onViewUpdates: () => this.gotoList('all', 'updates'),
+      trend,
+    };
 
     const catName = w.cat === 'fav' ? '我的收藏' : this.CATS.find(c => c.key === w.cat).label;
 
@@ -1542,6 +2154,46 @@ class Component extends DCLogic {
       isWeb: st.surface === 'web', isCli: st.surface === 'cli', onWeb: () => this.setSurface('web'), onCli: () => this.setSurface('cli'),
       seg: { web: { bg: st.surface === 'web' ? 'var(--accent)' : 'transparent', fg: st.surface === 'web' ? '#fff' : 'var(--text-2)' }, cli: { bg: st.surface === 'cli' ? 'var(--accent)' : 'transparent', fg: st.surface === 'cli' ? '#fff' : 'var(--text-2)' } },
       stop: (e) => e.stopPropagation(),
+
+      proxy: {
+        running: st.proxyRunning,
+        dotColor: st.proxyRunning ? 'var(--green)' : 'var(--text-3)',
+        statusLabel: st.proxyRunning ? '运行中' : '已停止',
+        statusFg: st.proxyRunning ? 'var(--green)' : 'var(--text-3)',
+        addr: 'http://127.0.0.1:18100', addrShort: '127.0.0.1:18100',
+        reqCount: '1,284', successRate: '99.2%',
+        onSelect: this.openLocal, onAddConfig: this.addLocalConfig,
+        summary: st.localConfigs.length + ' 个配置 · ' + st.localConfigs.filter(c => c.running).length + ' 个运行中',
+        isParent: st.proxySelected && !st.localSel,
+        configCountLabel: st.localConfigs.length + ' 个配置',
+        runningLabel: st.localConfigs.filter(c => c.running).length + ' 个运行中',
+        isChild: st.proxySelected && !!st.localSel && !!st.localConfigs.find(c => c.id === st.localSel),
+        configs: st.localConfigs.map(c => ({
+          id: c.id, name: c.name, port: c.port, reqs: c.reqs, success: c.success,
+          dot: c.running ? 'var(--green)' : 'var(--text-3)',
+          knobJustify: c.running ? 'flex-end' : 'flex-start', trackBg: c.running ? 'var(--accent)' : 'var(--border-strong)',
+          rowSelBg: st.localSel === c.id ? 'var(--accent-soft)' : 'transparent', rowSelBar: st.localSel === c.id ? 'var(--accent)' : 'transparent',
+          onOpen: () => this.openLocalConfig(c.id),
+          onRemove: (e) => { e.stopPropagation(); this.removeLocalConfig(c.id); },
+        })),
+        cfg: (() => { const c = st.localConfigs.find(x => x.id === st.localSel) || st.localConfigs[0] || {}; return {
+          name: c.name, port: c.port, reqs: c.reqs, success: c.success,
+          statusLabel: c.running ? '运行中' : '已停止', statusFg: c.running ? 'var(--green)' : 'var(--text-3)',
+          knobJustify: c.running ? 'flex-end' : 'flex-start', trackBg: c.running ? 'var(--accent)' : 'var(--border-strong)',
+          onToggle: () => this.toggleLocalConfig(c.id), onRemove: () => this.removeLocalConfig(c.id),
+          onName: (e) => this.setLocalField(c.id, 'name', e.target.value),
+          onPort: (e) => this.setLocalField(c.id, 'port', e.target.value.replace(/[^0-9]/g, '').slice(0, 5)),
+          appOpts: [{ id: 'claude', label: 'Claude Code' }, { id: 'codex', label: 'Codex' }].map(a => { const on = (c.targets || []).includes(a.id); return { label: a.label, active: on, icon: this.appIcon(a.id, on), border: on ? 'var(--accent)' : 'var(--border)', bg: on ? 'var(--accent-soft)' : 'var(--panel)', onClick: () => this.toggleLocalTarget(c.id, a.id) }; }),
+        }; })(),
+        onBack: this.openLocal,
+        rowSelBg: st.proxySelected && !st.localSel ? 'var(--accent-soft)' : 'transparent', rowSelBar: st.proxySelected && !st.localSel ? 'var(--accent)' : 'transparent',
+        onCopy: this.copyProxyAddr, onToggle: this.toggleProxy, onOpenLog: this.openProxyLog,
+        knobJustify: st.proxyRunning ? 'flex-end' : 'flex-start', trackBg: st.proxyRunning ? 'var(--accent)' : 'var(--border-strong)',
+      },
+      proxyLog: {
+        open: st.proxyLogOpen, onClose: this.closeProxyLog,
+        entries: this.PROXY_LOG.map(e => ({ ...e, statusColor: e.ok ? 'var(--green)' : (e.fallback ? 'var(--amber)' : 'var(--red)'), method: e.app, target: e.model + ' → ' + e.provider + (e.fallback ? ' (降级)' : ''), latency: e.ms + 'ms', status: e.ok ? '200' : '502' })),
+      },
 
       web: {
         q: w.q, onSearch: this.setSearch, urlPath: w.profile ? ('/@' + w.profile) : (w.sel ? ('/p/' + w.sel) : '/explore'),
@@ -1560,7 +2212,7 @@ class Component extends DCLogic {
         onPublish: this.openPublish, onClosePublish: this.closePublish, onOpenMe: () => this.openProfile('you'),
       },
       cats, gridPkgs, featured,
-      detailOpen: !!detail, detail,
+      detailOpen: !!detail && !(st.surface === 'cli' && (st.cliEditId || st.cliInfoId || st.proxySelected)), detail,
       profileOpen: !!profile, profile,
       publishOpen: st.publishOpen, publish,
 
@@ -1584,18 +2236,29 @@ class Component extends DCLogic {
         showInstalledSection: showInstalled, showRecommendedSection: showRecommended,
         filterMenuOpen: st.cli.filterMenuOpen, onToggleFilterMenu: this.toggleFilterMenu, onCloseFilterMenu: this.closeFilterMenu, filterDiscovery, filterStatus, searchValue,
         hasSearch: searchValue !== '', onClearSearch: () => this.setListFilter('all'),
-        detailEmpty: !detail, activeTypeLabel: (this.TYPE[cf] ? this.TYPE[cf].label : '全部'),
+        detailEmpty: !detail && !st.cliEditId && !st.cliInfoId && !st.proxySelected, activeTypeLabel: (this.TYPE[cf] ? this.TYPE[cf].label : '全部'),
+        showConfig: !!st.cliEditId, showProxy: !!st.proxySelected && !st.cliEditId && !st.cliInfoId, showProxyRow: (cf === 'all' || cf === 'provider'), isProviderCat, configSaved: !!st.configSaved, configError: st.configError || '', hasConfigError: !!st.configError,
+        view: st.cli.view, isOverview: st.cli.view === 'overview', isList: st.cli.view !== 'overview', onSetView: this.setCliView, overview,
+        onOverview: () => this.setCliView('overview'),
+        overviewBg: st.cli.view === 'overview' ? 'var(--accent-soft)' : 'transparent',
+        overviewBar: st.cli.view === 'overview' ? 'var(--accent)' : 'transparent',
+        overviewColor: st.cli.view === 'overview' ? 'var(--accent)' : 'var(--text-3)',
+        helpTip: st.helpTip || null, hasHelpTip: !!st.helpTip,
+        showInfo: !!st.cliInfoId && !st.cliEditId && !st.proxySelected,
+        info: this.buildProviderInfo(st.cliInfoId),
         filterChips, filterActiveLabel: this.CATS ? '' : '',
         edit: {
           open: !!st.cliEditId, id: st.cliEditId, configName: st.cliEditVals.name || st.cliEditId,
           nameValue: st.cliEditVals.name || '', onNameInput: (e) => this.setCliEditVal('name', e.target.value),
-          onClose: this.closeCliEdit, onSave: this.saveCliEdit,
-          fields: this.PROVIDER_FORM.map(fd => ({
-            label: fd.label, ph: fd.ph || '', help: fd.help || '', hasHelp: !!fd.help, value: st.cliEditVals[fd.key] || '',
-            isSelect: fd.kind === 'select', isText: fd.kind !== 'select' && fd.kind !== 'readonly', isReadonly: fd.kind === 'readonly',
-            onInput: (e) => this.setCliEditVal(fd.key, e.target.value),
-            options: (fd.options || []).map(op => ({ label: op, active: (st.cliEditVals[fd.key] || '') === op, bg: (st.cliEditVals[fd.key] || '') === op ? 'var(--accent-soft)' : 'var(--panel)', fg: (st.cliEditVals[fd.key] || '') === op ? 'var(--accent)' : 'var(--text-2)', border: (st.cliEditVals[fd.key] || '') === op ? 'var(--accent)' : 'var(--border-strong)', onClick: () => this.setCliEditVal(fd.key, op) })),
-          })),
+          nameHasError: st.errorField === 'name', nameBorder: st.errorField === 'name' ? 'var(--red)' : 'transparent',
+          saving: !!st.cliSaving, saved: !st.cliSaving && !!st.cliSaved,
+          showWarn: !((st.cliEditVals.apiKey || '').trim()) || !((st.cliEditVals.targets || []).length),
+          warnText: !((st.cliEditVals.targets || []).length) ? '尚未选择适用客户端，此配置已保存但不会对任何 CLI 生效' : '尚未填写 API 密钥，此配置已保存但暂时无法使用',
+          advancedOpen: !!st.cliAdvancedOpen, onToggleAdvanced: () => this.setState(s => ({ cliAdvancedOpen: !s.cliAdvancedOpen })), advChevron: st.cliAdvancedOpen ? '▾' : '▸',
+          onClose: this.closeCliEdit, onSave: this.saveCliEdit, onDuplicateFromPanel: () => this.duplicateProvider(st.cliEditId),
+          fields: this.PROVIDER_FORM.filter(fd => fd.tier === 'essential').map(fd => this._mapEditField(fd, st)),
+          optionalFields: this.PROVIDER_FORM.filter(fd => fd.tier === 'optional').map(fd => this._mapEditField(fd, st)),
+          moreOpen: !!st.cliMoreOpen, onToggleMore: () => this.setState(s => ({ cliMoreOpen: !s.cliMoreOpen })), moreChevron: st.cliMoreOpen ? '▾' : '▸',
           whitelist: (st.cliEditVals.whitelist || []).map((w, i) => ({ label: w, onRemove: () => this.removeWhitelist(i) })),
           wlDraft: st.cliEditVals.wlDraft || '', onWlDraft: (e) => this.setCliEditVal('wlDraft', e.target.value), onWlAdd: this.addWhitelist,
           mapping: (st.cliEditVals.mapping || []).map((m, i) => ({ from: m.from, to: m.to, onRemove: () => this.removeMapping(i) })),
