@@ -8,7 +8,7 @@ export function TitleBar() {
     <div
       data-tauri-drag-region
       onDoubleClick={() => void getWindow().then((w) => w.toggleMaximize())}
-      className="relative flex h-[44px] shrink-0 items-center border-b border-store-border bg-store-chrome px-4"
+      className="relative flex h-[44px] shrink-0 items-center border-b border-store-border bg-store-sidebar px-4"
     >
       <div className="flex gap-2">
         <button
