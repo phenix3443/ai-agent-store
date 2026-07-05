@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Copy, Heart } from 'lucide-react'
+import type { InstalledItem } from '@aas/types'
 import { callRpc } from '../lib/rpc'
 import { useAppState } from '../state/AppState'
 import { useTerminalLog } from '../state/TerminalLog'
@@ -21,6 +22,17 @@ export function DetailPanel() {
   const { appendLine } = useTerminalLog()
   const detail = useSelectedDetail()
   const [tab, setTab] = useState<Tab>('overview')
+  const [childCount, setChildCount] = useState(0)
+
+  useEffect(() => {
+    if (!detail || detail.category !== 'provider' || !detail.installed) {
+      setChildCount(0)
+      return
+    }
+    callRpc<InstalledItem[]>('list').then((items) => {
+      setChildCount(items.filter((i) => i.parentSlug === detail.slug).length)
+    })
+  }, [detail])
 
   if (selectedSlug && isLocalProviderSlug(selectedSlug)) {
     return <LocalProviderDetail selectedSlug={selectedSlug} />
@@ -100,6 +112,12 @@ export function DetailPanel() {
           <Heart size={14} fill={isFavorite ? 'currentColor' : 'none'} />
         </button>
       </div>
+
+      {childCount > 0 && (
+        <p className="mt-2 text-xs text-store-text-2">
+          已有 {childCount} 份配置 · 在左侧列表展开该条目即可管理
+        </p>
+      )}
 
       <div className="mt-4 flex items-center justify-between rounded-lg bg-black px-3 py-2 font-mono text-xs text-store-text-2">
         <span>$ agent-store add {detail.slug}</span>

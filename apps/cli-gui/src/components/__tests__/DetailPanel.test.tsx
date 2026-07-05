@@ -188,3 +188,48 @@ test('clicking the copy button copies the install command to the clipboard', asy
   fireEvent.click(screen.getByLabelText('复制安装命令'))
   expect(writeText).toHaveBeenCalledWith('agent-store add filesystem')
 })
+
+test('shows a child-config count banner for a provider with duplicated configs', async () => {
+  mockRpc({
+    info: () => ({
+      slug: 'test-provider', category: 'provider', version: '1.0.0', installedAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z', compatibleWith: ['claude'], enabledFor: { claude: true },
+      name: 'test-provider', description: 'test provider', readmeUrl: '', icon: '',
+      publisher, tags: [], downloads: 100, installed: true,
+    }),
+    list: () => [
+      { slug: 'test-provider', category: 'provider', version: '1.0.0', installedAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z', compatibleWith: ['claude'], enabledFor: { claude: true },
+        name: 'test-provider', description: 'test provider', readmeUrl: '', icon: '',
+        publisher, tags: [], downloads: 100, installed: true },
+      { slug: 'test-provider-copy', category: 'provider', version: '1.0.0', installedAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z', compatibleWith: ['claude'], enabledFor: { claude: true },
+        name: 'test-provider-copy', description: 'test provider copy', readmeUrl: '', icon: '',
+        publisher, tags: [], downloads: 50, installed: true, parentSlug: 'test-provider' },
+    ],
+  })
+  renderPanel('test-provider')
+  fireEvent.click(screen.getByText('select'))
+  expect(await screen.findByText(/已有 1 份配置/)).toBeInTheDocument()
+})
+
+test('does not show the child-config banner for a provider with no duplicates', async () => {
+  mockRpc({
+    info: () => ({
+      slug: 'test-provider', category: 'provider', version: '1.0.0', installedAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z', compatibleWith: ['claude'], enabledFor: { claude: true },
+      name: 'test-provider', description: 'test provider', readmeUrl: '', icon: '',
+      publisher, tags: [], downloads: 100, installed: true,
+    }),
+    list: () => [
+      { slug: 'test-provider', category: 'provider', version: '1.0.0', installedAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z', compatibleWith: ['claude'], enabledFor: { claude: true },
+        name: 'test-provider', description: 'test provider', readmeUrl: '', icon: '',
+        publisher, tags: [], downloads: 100, installed: true },
+    ],
+  })
+  renderPanel('test-provider')
+  fireEvent.click(screen.getByText('select'))
+  await screen.findByText('test-provider')
+  expect(screen.queryByText(/已有.*份配置/)).not.toBeInTheDocument()
+})
