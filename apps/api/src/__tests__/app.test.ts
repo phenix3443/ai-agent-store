@@ -15,9 +15,9 @@ const mockPublisher: Publisher = mockItem.publisher
 
 mock.module('../queries', () => ({
   getItems: async () => ({ data: [mockItem], error: null }),
-  getItemBySlug: async (slug: string) =>
+  getItemBySlug: async (_env: unknown, slug: string) =>
     slug === 'openai-provider' ? { data: mockItem, error: null } : { data: null, error: null },
-  getPublisherBySlug: async (slug: string) =>
+  getPublisherBySlug: async (_env: unknown, slug: string) =>
     slug === 'openai' ? { data: mockPublisher, error: null } : { data: null, error: null },
   getPublisherItems: async () => ({ data: [mockItem], error: null }),
 }))

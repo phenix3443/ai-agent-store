@@ -1,5 +1,5 @@
 import type { Item, Publisher } from '@aas/types'
-import { getSupabase } from './supabase'
+import { getSupabase, type SupabaseEnv } from './supabase'
 import { mapItem, mapPublisher, type DBItem, type DBPublisher } from './db-types'
 
 const ITEM_SELECT = '*, publishers(*)'
@@ -12,11 +12,15 @@ export interface GetItemsOptions {
   sort?: 'downloads' | 'created'
 }
 
+// Each query takes the runtime env (Cloudflare Workers `c.env`, or undefined on
+// local Bun where it falls back to process.env) and creates a Supabase client.
+
 export async function getItems(
+  env: SupabaseEnv | undefined,
   options: GetItemsOptions
 ): Promise<{ data: Item[]; error: string | null }> {
   const { category, q, limit = 20, offset = 0, sort = 'downloads' } = options
-  const supabase = getSupabase()
+  const supabase = getSupabase(env)
 
   let query = supabase.from('items').select(ITEM_SELECT).eq('status', 'published')
 
@@ -35,9 +39,10 @@ export async function getItems(
 }
 
 export async function getItemBySlug(
+  env: SupabaseEnv | undefined,
   slug: string
 ): Promise<{ data: Item | null; error: string | null }> {
-  const supabase = getSupabase()
+  const supabase = getSupabase(env)
 
   const { data, error } = await supabase
     .from('items')
@@ -58,9 +63,10 @@ export async function getItemBySlug(
 }
 
 export async function getPublisherBySlug(
+  env: SupabaseEnv | undefined,
   slug: string
 ): Promise<{ data: Publisher | null; error: string | null }> {
-  const supabase = getSupabase()
+  const supabase = getSupabase(env)
 
   const { data, error } = await supabase
     .from('publishers')
@@ -79,9 +85,10 @@ export async function getPublisherBySlug(
 }
 
 export async function getPublisherItems(
+  env: SupabaseEnv | undefined,
   publisherSlug: string
 ): Promise<{ data: Item[]; error: string | null }> {
-  const supabase = getSupabase()
+  const supabase = getSupabase(env)
 
   const { data: publisherData, error: pubError } = await supabase
     .from('publishers')
