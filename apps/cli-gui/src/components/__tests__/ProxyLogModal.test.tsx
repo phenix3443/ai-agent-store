@@ -2,7 +2,7 @@ import { test, expect, afterEach, spyOn, mock } from 'bun:test'
 import { render, screen, cleanup } from '@testing-library/react'
 import * as rpcModule from '../../lib/rpc'
 import { ProxyLogModal } from '../ProxyLogModal'
-import type { RecentRequestRow } from '@aas/types'
+import type { LocalRelayConfig, RecentRequestRow } from '@aas/types'
 
 afterEach(() => { cleanup(); mock.restore() })
 
@@ -15,18 +15,40 @@ function row(overrides: Partial<RecentRequestRow>): RecentRequestRow {
   }
 }
 
-test('shows recent request rows including a fallback marker', async () => {
+function mockRpc(rows: RecentRequestRow[], localConfigs: LocalRelayConfig[] = []) {
   spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string) => {
-    if (method === 'getRecentRequests') {
-      return [row({ id: 2, providerSlug: 'backup', isFallback: true }), row({ id: 1 })]
-    }
+    if (method === 'getRecentRequests') return rows
+    if (method === 'listLocalConfigs') return localConfigs
     throw new Error(`unexpected RPC in ProxyLogModal test: ${method}`)
   }) as typeof rpcModule.callRpc)
+}
+
+test('shows title and subtitle with relay address', async () => {
+  mockRpc([row({})], [{ id: 'c1', name: 'default', port: 8787, enabled: true } as LocalRelayConfig])
 
   render(<ProxyLogModal open onOpenChange={() => {}} />)
 
-  expect(await screen.findByText('p1')).toBeInTheDocument()
-  expect(await screen.findByText(/backup.*（降级）/)).toBeInTheDocument()
+  expect(await screen.findByText('本地代理 · 请求日志')).toBeInTheDocument()
+  expect(await screen.findByText((_, el) => el?.textContent === '127.0.0.1:8787 · 按 Level 顺序转发，失败自动降级')).toBeInTheDocument()
+})
+
+test('shows recent request rows with provider route and fallback badge', async () => {
+  mockRpc([row({ id: 2, providerSlug: 'backup', isFallback: true }), row({ id: 1 })])
+
+  render(<ProxyLogModal open onOpenChange={() => {}} />)
+
+  expect(await screen.findByText((_, el) => el?.textContent === '→ p1')).toBeInTheDocument()
+  expect(await screen.findByText((_, el) => el?.textContent === '→ backup')).toBeInTheDocument()
+  expect(await screen.findByText('降级')).toBeInTheDocument()
+})
+
+test('does not show fallback badge for non-fallback rows', async () => {
+  mockRpc([row({ id: 1, isFallback: false })])
+
+  render(<ProxyLogModal open onOpenChange={() => {}} />)
+
+  await screen.findByText((_, el) => el?.textContent === '→ p1')
+  expect(screen.queryByText('降级')).not.toBeInTheDocument()
 })
 
 test('does not fetch when closed', () => {

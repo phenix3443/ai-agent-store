@@ -155,7 +155,7 @@ test('shows the 5 most recent requests and opens the proxy log modal from 查看
   expect(await screen.findByText('最近请求')).toBeInTheDocument()
   expect(await screen.findByText(/p1/)).toBeInTheDocument()
   fireEvent.click(screen.getByText('查看全部'))
-  expect(await screen.findByText('代理请求日志')).toBeInTheDocument()
+  expect(await screen.findByText('本地代理 · 请求日志')).toBeInTheDocument()
 })
 
 test('recent request rows show a colored status dot and mapped client name', async () => {
