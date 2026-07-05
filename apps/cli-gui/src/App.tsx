@@ -24,7 +24,7 @@ function AppShell() {
   return (
     <div
       data-theme={theme}
-      className="flex h-screen w-screen flex-col overflow-hidden rounded-xl border border-store-border-strong bg-store-win text-store-text"
+      className="flex h-screen w-screen flex-col overflow-hidden rounded-[14px] bg-store-win text-store-text"
     >
       <TitleBar />
       <div className="flex flex-1 overflow-hidden">

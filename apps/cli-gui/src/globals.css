@@ -54,7 +54,10 @@
   --purple-soft: rgba(134, 84, 201, 0.1);
 }
 
+html,
 body {
   margin: 0;
-  background: var(--wall);
+  /* Transparent so the rounded, decoration-less window shows the real desktop
+     through its corners — the mockup's --wall was only its simulated desktop. */
+  background: transparent;
 }
