@@ -16,6 +16,16 @@ before proposing a new design. Prefer adapting their proven approach over invent
 from scratch — only deviate where this repo's stack or scope genuinely requires it, and
 say so explicitly.
 
+## UI implementation must follow the design file
+
+`docs/ui/Agent Store.dc.html` is the single source of truth for UI structure, layout, and
+behavior. Read its actual HTML/JS template source directly before implementing or
+reviewing any screen — do not rely on `docs/ui/README.md` prose or `docs/ui/screens/*.png`
+reference screenshots, both of which have been found stale/inaccurate relative to the live
+mockup source. When the mockup changes, re-read the relevant section of the `.dc.html`
+file and update the implementation to match — do not implement from memory of an earlier
+version. When implementation and the design file conflict, the design file wins.
+
 ## UI implementation sign-off
 
 Any UI work (Web Store or the desktop client, whether new or modified) is not done until
