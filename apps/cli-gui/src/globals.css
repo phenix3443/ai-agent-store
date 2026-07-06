@@ -26,6 +26,8 @@
   --provider-soft: rgba(88, 166, 240, 0.16);
   --purple: #a874e0;
   --purple-soft: rgba(168, 116, 224, 0.12);
+  --term-bg: #0c0c10;
+  --code-bg: rgba(255, 255, 255, 0.055);
 }
 
 [data-theme='light'] {
@@ -52,6 +54,8 @@
   --provider-soft: rgba(47, 111, 184, 0.12);
   --purple: #8654c9;
   --purple-soft: rgba(134, 84, 201, 0.1);
+  --term-bg: #17171d;
+  --code-bg: rgba(0, 0, 0, 0.045);
 }
 
 html,

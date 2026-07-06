@@ -5,6 +5,7 @@ import { callRpc } from '../lib/rpc'
 import { useAppState, type AgentApp, type ListFilter } from '../state/AppState'
 import { useTerminalLog } from '../state/TerminalLog'
 import { CategoryIcon } from './CategoryIcon'
+import { TIER_META } from '../lib/detailContent'
 import {
   matchesCategoryFilter, matchesText, enrichInstalled, filterInstalledByListFilter,
   filterRecommendedByListFilter, showInstalledSection, showRecommendedSection,
@@ -384,7 +385,21 @@ export function ResourceList() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-store-text">{item.name}</p>
+                    <p className="flex items-center gap-1 text-sm text-store-text">
+                      <span className="truncate">{item.name}</span>
+                      {item.publisher.tier !== 'community' && (
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          className={`shrink-0 ${TIER_META[item.publisher.tier]?.textClass ?? ''}`}
+                        >
+                          <circle cx="8" cy="8" r="6.4" stroke="currentColor" strokeWidth="1.3" />
+                          <path d="M6 8l1.5 1.5L11 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </p>
                     <p className="text-xs text-store-text-3">
                       ★ {item.rating} · ↓ {item.downloads}
                     </p>

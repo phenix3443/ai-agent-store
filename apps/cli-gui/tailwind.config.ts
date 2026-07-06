@@ -4,6 +4,9 @@ const config: Config = {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        mono: ['JetBrains Mono', 'ui-monospace', 'SF Mono', 'monospace'],
+      },
       colors: {
         store: {
           wall: 'var(--wall)',
@@ -29,6 +32,8 @@ const config: Config = {
           'provider-soft': 'var(--provider-soft)',
           purple: 'var(--purple)',
           'purple-soft': 'var(--purple-soft)',
+          'term-bg': 'var(--term-bg)',
+          'code-bg': 'var(--code-bg)',
         },
       },
     },

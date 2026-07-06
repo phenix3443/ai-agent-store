@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@as/types": "workspace:*",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@radix-ui/react-dialog": "^1.1.1",
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/plugin-fs": "^2.0.1",

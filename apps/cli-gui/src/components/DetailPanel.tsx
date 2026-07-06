@@ -138,7 +138,7 @@ export function DetailPanel() {
           </div>
         </div>
 
-        <div className="mt-5 flex items-center gap-2 rounded-lg border border-store-border bg-black px-3 py-2.5 font-mono text-xs text-store-text-2">
+        <div className="mt-5 flex items-center gap-2 rounded-lg border border-store-border bg-store-term-bg px-3 py-2.5 font-mono text-xs text-store-text-2">
           <span className="text-store-green">$</span>
           <span className="flex-1">{installCmdOf(detail.slug)}</span>
           <button
@@ -189,7 +189,7 @@ export function DetailPanel() {
               }
               if (block.type === 'code') {
                 return (
-                  <div key={i} className="rounded-lg border border-store-border bg-black px-3.5 py-3 font-mono text-xs text-store-text-2">
+                  <div key={i} className="rounded-lg border border-store-border bg-store-term-bg px-3.5 py-3 font-mono text-xs text-store-text-2">
                     {block.text}
                   </div>
                 )
