@@ -1,7 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, X, Github } from 'lucide-react'
 import { useAppState, type AgentApp } from '../state/AppState'
+import { useAuth } from '../state/Auth'
+import { useEntitlement } from '../state/Entitlement'
+import { callRpc } from '../lib/rpc'
+import { openExternal } from '../lib/openExternal'
 
 interface SettingsModalProps {
   open: boolean
@@ -31,15 +35,47 @@ const LANGUAGES = [
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { agentApp, theme, toggleTheme } = useAppState()
+  const { email, signedIn, accessToken, configured, signIn, signOut } = useAuth()
+  const { entitlements } = useEntitlement()
   const [tab, setTab] = useState<Tab>('account')
-  // No auth backend exists yet (checked src/lib/rpc.ts) — login state is local-only UI stub,
-  // matching the mockup's own toggleLogin (a local state flip with no backend either).
-  const [loggedIn, setLoggedIn] = useState(false)
+  const [authBusy, setAuthBusy] = useState(false)
   const [langCode, setLangCode] = useState('zh')
   const [langMenuOpen, setLangMenuOpen] = useState(false)
 
   const currentLang = LANGUAGES.find((l) => l.code === langCode) ?? LANGUAGES[0]
   const appMeta = APP_META[agentApp]
+
+  const isPro = entitlements.plan !== 'free'
+  const avatarLetter = (email ?? 'A').charAt(0).toUpperCase()
+
+  async function handleAuth() {
+    if (authBusy) return
+    setAuthBusy(true)
+    try {
+      if (signedIn) await signOut()
+      else await signIn('github')
+    } catch (err) {
+      console.error('[auth] sign-in/out failed:', err)
+    } finally {
+      setAuthBusy(false)
+    }
+  }
+
+  async function handleUpgrade() {
+    if (authBusy) return
+    setAuthBusy(true)
+    try {
+      const { checkoutUrl } = await callRpc<{ checkoutUrl: string }>('createCheckout', [
+        'monthly',
+        accessToken ?? undefined,
+      ])
+      await openExternal(checkoutUrl)
+    } catch (err) {
+      console.error('[billing] checkout failed:', err)
+    } finally {
+      setAuthBusy(false)
+    }
+  }
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -84,37 +120,57 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                       className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[19px] font-bold text-white"
                       style={{ background: 'linear-gradient(135deg, #7c82ff, #b06ad9)' }}
                     >
-                      Y
+                      {avatarLetter}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-[15px] font-bold text-store-text">you@dev</div>
+                      <div className="truncate text-[15px] font-bold text-store-text">{email ?? '未登录'}</div>
                       <div className="mt-[3px] flex items-center gap-[5px]">
                         <span
                           className="h-[7px] w-[7px] rounded-full"
-                          style={{ background: loggedIn ? 'var(--green)' : 'var(--text-3)' }}
+                          style={{ background: signedIn ? 'var(--green)' : 'var(--text-3)' }}
                         />
-                        <span className="text-xs text-store-text-2">{loggedIn ? '已登录' : '未登录'}</span>
+                        <span className="text-xs text-store-text-2">{signedIn ? '已登录' : '未连接'}</span>
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setLoggedIn((v) => !v)}
-                      className="rounded-[9px] border border-store-border-strong px-4 py-2 text-[12.5px] font-semibold text-store-text hover:border-store-accent hover:text-store-accent"
+                      onClick={handleAuth}
+                      disabled={!configured || authBusy}
+                      className="flex items-center gap-1.5 rounded-[9px] border border-store-border-strong px-4 py-2 text-[12.5px] font-semibold text-store-text hover:border-store-accent hover:text-store-accent disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {loggedIn ? '退出登录' : '登录'}
+                      {!signedIn && <Github size={13} />}
+                      {signedIn ? '退出登录' : 'GitHub 登录'}
                     </button>
                   </div>
 
                   <div className="mt-3 flex items-center justify-between rounded-xl border border-store-border bg-store-panel px-[18px] py-3.5">
                     <div>
                       <div className="text-[13px] font-semibold text-store-text">订阅计划</div>
-                      <div className="mt-0.5 text-[11.5px] text-store-text-3">Pro · 无限私有资源</div>
+                      <div className="mt-0.5 text-[11.5px] text-store-text-3">
+                        {isPro ? 'Pro · 无限私有资源 + 高级用量分析' : 'Free · 升级解锁预算告警等 Pro 功能'}
+                      </div>
                     </div>
-                    <span className="rounded-md bg-store-accent-soft px-2.5 py-1 text-[11px] font-bold text-store-accent">
-                      PRO
-                    </span>
+                    {isPro ? (
+                      <span className="rounded-md bg-store-accent-soft px-2.5 py-1 text-[11px] font-bold text-store-accent">
+                        PRO
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleUpgrade}
+                        disabled={authBusy}
+                        className="rounded-[9px] bg-store-accent px-3.5 py-2 text-[12px] font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                      >
+                        升级 Pro
+                      </button>
+                    )}
                   </div>
 
+                  {!configured && (
+                    <p className="mt-3 text-[11.5px] leading-relaxed text-store-red">
+                      登录未配置：缺少 VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY。
+                    </p>
+                  )}
                   <p className="mt-3.5 text-[11.5px] leading-relaxed text-store-text-3">
                     登录后可发布私有资源、跨设备同步已安装的技能 / MCP / 供应商 / 插件，并接收更新推送。
                   </p>

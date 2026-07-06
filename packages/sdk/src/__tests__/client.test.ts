@@ -339,3 +339,64 @@ describe('AASClient.createItem', () => {
     globalThis.fetch = originalFetch
   })
 })
+
+describe('AASClient.getMyEntitlements', () => {
+  test('sends the bearer token and returns the plan', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(url)).toBe('http://localhost:3000/api/me/entitlements')
+      expect((init?.headers as Record<string, string>)['Authorization']).toBe('Bearer tok-1')
+      return new Response(JSON.stringify({ plan: 'pro' }), { status: 200 })
+    }
+
+    const client = new AASClient()
+    const result = await client.getMyEntitlements('tok-1')
+    expect(result.data).toEqual({ plan: 'pro' })
+    expect(result.error).toBeNull()
+
+    globalThis.fetch = originalFetch
+  })
+
+  test('returns error on 401', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async () => new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+
+    const client = new AASClient()
+    const result = await client.getMyEntitlements('bad')
+    expect(result.data).toBeNull()
+    expect(result.error).toBe('Unauthorized')
+
+    globalThis.fetch = originalFetch
+  })
+})
+
+describe('AASClient.createCheckout', () => {
+  test('posts the period with the bearer token and returns the checkout url', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(url)).toBe('http://localhost:3000/api/billing/checkout')
+      expect(init?.method).toBe('POST')
+      expect((init?.headers as Record<string, string>)['Authorization']).toBe('Bearer tok-1')
+      expect(JSON.parse(String(init?.body))).toEqual({ period: 'yearly' })
+      return new Response(JSON.stringify({ checkoutUrl: 'https://pay.example/cs_1' }), { status: 200 })
+    }
+
+    const client = new AASClient()
+    const result = await client.createCheckout({ period: 'yearly' }, { token: 'tok-1' })
+    expect(result.data).toEqual({ checkoutUrl: 'https://pay.example/cs_1' })
+
+    globalThis.fetch = originalFetch
+  })
+
+  test('returns error when billing is not configured (501)', async () => {
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = async () => new Response(JSON.stringify({ error: 'Billing not configured' }), { status: 501 })
+
+    const client = new AASClient()
+    const result = await client.createCheckout({ period: 'monthly' })
+    expect(result.data).toBeNull()
+    expect(result.error).toBe('Billing not configured')
+
+    globalThis.fetch = originalFetch
+  })
+})

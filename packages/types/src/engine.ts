@@ -1,5 +1,6 @@
 import type { Item, JsonSchema } from './items'
 import type { Publisher } from './publisher'
+import type { Entitlements } from './entitlement'
 
 /** The canonical union for supported tool targets */
 export type ToolTarget = 'claude' | 'codex'
@@ -91,6 +92,30 @@ export interface UsageSummaryOptions {
   days?: number
   providerSlug?: string
   target?: ToolTarget
+}
+
+/** User-configured spending budget. `monthlyLimitUsd` null means no budget set. */
+export interface BudgetConfig {
+  monthlyLimitUsd: number | null
+  /** Fractions of the limit (0–1+) at which to warn, e.g. [0.8, 1]. */
+  alertThresholds: number[]
+}
+
+/** Computed budget state for the current calendar month. */
+export interface BudgetStatus {
+  monthlyLimitUsd: number | null
+  /** Spend so far this calendar month, in USD. */
+  spentUsd: number
+  /** First day of the current calendar month, as YYYY-MM-DD. */
+  monthStart: string
+  /** spentUsd / monthlyLimitUsd, or null when no budget is set. */
+  fraction: number | null
+  /** Linear month-end projection based on spend-per-day-so-far. */
+  projectedUsd: number
+  /** Whether the projection exceeds the budget. */
+  projectedOverBudget: boolean
+  /** none = under warn threshold; warn = past warn threshold; over = at/over the limit. */
+  alertLevel: 'none' | 'warn' | 'over'
 }
 
 export interface RecentRequestRow {
@@ -212,4 +237,18 @@ export interface AASEngine {
   ): Promise<LocalRelayConfig>
   /** Flips a local relay configuration's enabled flag. */
   toggleLocalConfig(id: string): Promise<LocalRelayConfig>
+  /** Resolves the current user's plan-based feature entitlements (defaults to the free plan). */
+  getEntitlements(): Promise<Entitlements>
+  /** Fetches the authenticated user's plan from the store, caches it locally, and returns the resolved entitlements. */
+  syncEntitlement(token: string): Promise<Entitlements>
+  /** Creates a Pro checkout session and returns its URL. Pass the session token to bind the subscription to the user. */
+  createCheckout(period: 'monthly' | 'yearly', token?: string): Promise<{ checkoutUrl: string }>
+  /** Clears the locally cached plan back to free (e.g. on sign-out). */
+  clearEntitlement(): Promise<Entitlements>
+  /** Returns the configured spending budget (null limit when unset). */
+  getBudget(): Promise<BudgetConfig>
+  /** Persists the spending budget and returns the normalized config. */
+  setBudget(config: BudgetConfig): Promise<BudgetConfig>
+  /** Computes current-month spend against the budget, with projection and alert level. */
+  getBudgetStatus(): Promise<BudgetStatus>
 }

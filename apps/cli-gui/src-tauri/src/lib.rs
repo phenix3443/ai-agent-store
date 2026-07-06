@@ -3,6 +3,7 @@ pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
     .plugin(tauri_plugin_fs::init())
+    .plugin(tauri_plugin_deep_link::init())
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -10,6 +11,13 @@ pub fn run() {
             .level(log::LevelFilter::Info)
             .build(),
         )?;
+      }
+      // Register the agent-store:// scheme at runtime (needed on Linux/Windows dev;
+      // macOS/Windows release pick it up from the bundle config).
+      #[cfg(any(target_os = "linux", all(debug_assertions, windows)))]
+      {
+        use tauri_plugin_deep_link::DeepLinkExt;
+        let _ = app.deep_link().register_all();
       }
       Ok(())
     })

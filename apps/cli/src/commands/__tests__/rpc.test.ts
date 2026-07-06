@@ -26,6 +26,10 @@ function makeEngine(overrides?: Partial<AASEngine>): AASEngine {
     removeLocalConfig: async () => undefined,
     updateLocalConfig: async () => ({ id: 'x', name: 'x', port: 18780, enabled: true, enabledFor: { claude: true, codex: true } }),
     toggleLocalConfig: async () => ({ id: 'x', name: 'x', port: 18780, enabled: true, enabledFor: { claude: true, codex: true } }),
+    getEntitlements: async () => ({ plan: 'free', advancedUsageAnalytics: false, smartRouting: false, keyRotation: false }),
+    syncEntitlement: async () => ({ plan: 'pro', advancedUsageAnalytics: true, smartRouting: true, keyRotation: true }),
+    createCheckout: async () => ({ checkoutUrl: 'https://pay.example/cs_1' }),
+    clearEntitlement: async () => ({ plan: 'free', advancedUsageAnalytics: false, smartRouting: false, keyRotation: false }),
     ...overrides,
   } as unknown as AASEngine
 }
@@ -57,6 +61,24 @@ test('runRpc returns ok:false and exit code 1 for an unknown method', async () =
   const parsed = JSON.parse(lines[0])
   expect(parsed.ok).toBe(false)
   expect(parsed.error).toContain('not-a-method')
+})
+
+test('runRpc dispatches createCheckout with period and token args', async () => {
+  const lines: string[] = []
+  const code = await runRpc(makeEngine(), ['createCheckout', '["yearly","tok-1"]'], s => lines.push(s))
+  expect(code).toBe(0)
+  const parsed = JSON.parse(lines[0])
+  expect(parsed.ok).toBe(true)
+  expect(parsed.data.checkoutUrl).toBe('https://pay.example/cs_1')
+})
+
+test('runRpc dispatches getEntitlements with no args', async () => {
+  const lines: string[] = []
+  const code = await runRpc(makeEngine(), ['getEntitlements'], s => lines.push(s))
+  expect(code).toBe(0)
+  const parsed = JSON.parse(lines[0])
+  expect(parsed.ok).toBe(true)
+  expect(parsed.data.plan).toBe('free')
 })
 
 test('runRpc returns ok:false and exit code 1 for invalid JSON args', async () => {

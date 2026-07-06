@@ -1,14 +1,21 @@
 import { test, expect, afterEach } from 'bun:test'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import { AppStateProvider } from '../../state/AppState'
+import { EntitlementProvider } from '../../state/Entitlement'
+import { AuthProvider } from '../../state/Auth'
 import { IconRail } from '../IconRail'
 
 afterEach(() => { cleanup() })
 
 function renderIconRail() {
+  // IconRail renders SettingsModal, which needs the entitlement + auth contexts.
   return render(
     <AppStateProvider>
-      <IconRail />
+      <EntitlementProvider>
+        <AuthProvider>
+          <IconRail />
+        </AuthProvider>
+      </EntitlementProvider>
     </AppStateProvider>
   )
 }

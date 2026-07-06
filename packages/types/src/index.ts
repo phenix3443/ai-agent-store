@@ -18,5 +18,8 @@ export type {
   RecentRequestRow,
   RelayStatus,
   LocalRelayConfig,
+  BudgetConfig,
+  BudgetStatus,
 } from './engine'
 export type { RegistryJson } from './registry'
+export type { Plan, SubscriptionStatus, Entitlements } from './entitlement'

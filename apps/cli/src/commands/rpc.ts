@@ -1,4 +1,4 @@
-import type { AASEngine, ListOptions, SearchOptions, ToolTarget, UsageSummaryOptions } from '@as/types'
+import type { AASEngine, BudgetConfig, ListOptions, SearchOptions, ToolTarget, UsageSummaryOptions } from '@as/types'
 
 type RpcHandler = (engine: AASEngine, args: unknown[]) => Promise<unknown>
 
@@ -29,6 +29,13 @@ const RPC_METHODS: Record<string, RpcHandler> = {
       a[1] as { name?: string; port?: number; enabledFor?: Partial<Record<ToolTarget, boolean>> }
     ),
   toggleLocalConfig: (e, a) => e.toggleLocalConfig(a[0] as string),
+  getEntitlements: (e) => e.getEntitlements(),
+  syncEntitlement: (e, a) => e.syncEntitlement(a[0] as string),
+  createCheckout: (e, a) => e.createCheckout(a[0] as 'monthly' | 'yearly', a[1] as string | undefined),
+  clearEntitlement: (e) => e.clearEntitlement(),
+  getBudget: (e) => e.getBudget(),
+  setBudget: (e, a) => e.setBudget(a[0] as BudgetConfig),
+  getBudgetStatus: (e) => e.getBudgetStatus(),
 }
 
 export async function runRpc(

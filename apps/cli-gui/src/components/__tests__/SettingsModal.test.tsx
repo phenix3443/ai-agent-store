@@ -1,64 +1,108 @@
-import { test, expect, afterEach } from 'bun:test'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
-import { SettingsModal } from '../SettingsModal'
-import { AppStateProvider } from '../../state/AppState'
+import { test, expect, afterEach, mock, spyOn } from 'bun:test'
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
+import * as rpcModule from '../../lib/rpc'
 
-afterEach(() => { cleanup() })
+const openMock = mock(async () => {})
+mock.module('../../lib/openExternal', () => ({ openExternal: openMock }))
+mock.module('../../lib/deepLink', () => ({ onDeepLink: async () => () => {} }))
+
+const signInWithOAuth = mock(async () => ({ data: { url: 'https://github.com/login/oauth?x=1' }, error: null }))
+const fakeClient = {
+  auth: {
+    getSession: mock(async () => ({ data: { session: null } })),
+    onAuthStateChange: mock(() => ({ data: { subscription: { unsubscribe: () => {} } } })),
+    signInWithOAuth,
+    exchangeCodeForSession: mock(async () => ({ data: {}, error: null })),
+    signOut: mock(async () => ({ error: null })),
+  },
+}
+mock.module('../../lib/supabase', () => ({
+  getSupabaseClient: () => fakeClient,
+  AUTH_REDIRECT_URL: 'agent-store://auth-callback',
+}))
+
+const { SettingsModal } = await import('../SettingsModal')
+const { AppStateProvider } = await import('../../state/AppState')
+const { EntitlementProvider } = await import('../../state/Entitlement')
+const { AuthProvider } = await import('../../state/Auth')
+
+afterEach(() => {
+  cleanup()
+  mock.restore()
+  openMock.mockClear()
+  signInWithOAuth.mockClear()
+})
 
 function renderModal() {
+  spyOn(rpcModule, 'callRpc').mockImplementation((async (method: string) => {
+    if (method === 'getEntitlements') return { plan: 'free', advancedUsageAnalytics: false, smartRouting: false, keyRotation: false }
+    if (method === 'createCheckout') return { checkoutUrl: 'https://pay.example/cs_1' }
+    if (method === 'syncEntitlement') return { plan: 'pro', advancedUsageAnalytics: true, smartRouting: true, keyRotation: true }
+    if (method === 'clearEntitlement') return { plan: 'free', advancedUsageAnalytics: false, smartRouting: false, keyRotation: false }
+    throw new Error(`unexpected RPC in SettingsModal test: ${method}`)
+  }) as typeof rpcModule.callRpc)
+
   return render(
     <AppStateProvider>
-      <SettingsModal open onOpenChange={() => {}} />
+      <EntitlementProvider>
+        <AuthProvider>
+          <SettingsModal open onOpenChange={() => {}} />
+        </AuthProvider>
+      </EntitlementProvider>
     </AppStateProvider>
   )
 }
 
-test('defaults to the account tab, showing logged-out state and subscription card', () => {
+test('defaults to the account tab, showing logged-out state and a free-plan upgrade CTA', async () => {
   renderModal()
-  expect(screen.getByText('未登录')).toBeInTheDocument()
-  expect(screen.getByText('登录')).toBeInTheDocument()
+  expect(await screen.findByText('未登录')).toBeInTheDocument()
+  expect(screen.getByText('GitHub 登录')).toBeInTheDocument()
   expect(screen.getByText('订阅计划')).toBeInTheDocument()
-  expect(screen.getByText('PRO')).toBeInTheDocument()
+  expect(screen.getByText('升级 Pro')).toBeInTheDocument()
 })
 
-test('login button toggles local login state', () => {
+test('clicking GitHub 登录 starts the OAuth flow and opens the browser', async () => {
   renderModal()
-  fireEvent.click(screen.getByText('登录'))
-  expect(screen.getByText('已登录')).toBeInTheDocument()
-  expect(screen.getByText('退出登录')).toBeInTheDocument()
+  fireEvent.click(await screen.findByText('GitHub 登录'))
+  await waitFor(() => expect(signInWithOAuth).toHaveBeenCalled())
+  await waitFor(() => expect(openMock).toHaveBeenCalledWith('https://github.com/login/oauth?x=1'))
 })
 
-test('switching to the general tab shows theme, default app, and language rows', () => {
+test('clicking 升级 Pro creates a checkout session and opens the checkout url', async () => {
   renderModal()
-  fireEvent.click(screen.getByText('通用'))
+  fireEvent.click(await screen.findByText('升级 Pro'))
+  await waitFor(() => expect(openMock).toHaveBeenCalledWith('https://pay.example/cs_1'))
+})
+
+test('switching to the general tab shows theme, default app, and language rows', async () => {
+  renderModal()
+  fireEvent.click(await screen.findByText('通用'))
   expect(screen.getByText('主题')).toBeInTheDocument()
   expect(screen.getByText('当前：暗色模式')).toBeInTheDocument()
   expect(screen.getByText('默认目标应用')).toBeInTheDocument()
   expect(screen.getByText('界面语言')).toBeInTheDocument()
 })
 
-test('theme toggle switches the displayed label', () => {
+test('theme toggle switches the displayed label', async () => {
   renderModal()
-  fireEvent.click(screen.getByText('通用'))
+  fireEvent.click(await screen.findByText('通用'))
   fireEvent.click(screen.getByText('主题').closest('button')!)
   expect(screen.getByText('当前：亮色模式')).toBeInTheDocument()
 })
 
-test('language dropdown lists options with the active one checked and disabled ones inert', () => {
+test('language dropdown lists options with the active one checked and disabled ones inert', async () => {
   renderModal()
-  fireEvent.click(screen.getByText('通用'))
+  fireEvent.click(await screen.findByText('通用'))
   fireEvent.click(screen.getByText('简体中文'))
   expect(screen.getByText('English')).toBeInTheDocument()
   expect(screen.getAllByText('即将支持').length).toBe(3)
-  const japaneseOption = screen.getByText('日本語')
-  expect(japaneseOption.closest('button')).toBeDisabled()
+  expect(screen.getByText('日本語').closest('button')).toBeDisabled()
 })
 
-test('switching to the about tab shows app name, version, and links', () => {
+test('switching to the about tab shows app name, version, and links', async () => {
   renderModal()
-  fireEvent.click(screen.getByText('关于'))
+  fireEvent.click(await screen.findByText('关于'))
   expect(screen.getByText('Agent Store CLI')).toBeInTheDocument()
   expect(screen.getByText('文档')).toBeInTheDocument()
-  expect(screen.getByText('GitHub')).toBeInTheDocument()
   expect(screen.getByText('检查更新')).toBeInTheDocument()
 })

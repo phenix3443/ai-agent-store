@@ -4,7 +4,7 @@ import type {
   AASEngine, AASPaths, InstallResult, SyncResult, UpdateAvailable, UpdateResult,
   ListOptions, InstalledItem, ItemDetail, ToolTarget, SearchOptions, Item, JsonSchema,
   UsageSummaryRow, UsageSummaryOptions, ModelPricing, RegistryJson, LocalRelayConfig,
-  RecentRequestRow, RelayStatus,
+  RecentRequestRow, RelayStatus, Entitlements, BudgetConfig, BudgetStatus,
 } from '@as/types'
 import { AASClient } from '@as/sdk'
 import { resolvePaths, itemDir } from './paths'
@@ -19,6 +19,8 @@ import { syncItemToCodex, enableRelayForCodex, disableRelayForCodex } from './co
 import { checkUpdates as _checkUpdates, applyUpdate } from './updater/index'
 import { duplicateProviderConnection } from './config/provider'
 import { getDailySummary, getRecentRequests } from './usage/queries'
+import { resolveEntitlements, entitlementsForPlan, writeEntitlementCache } from './entitlement/index'
+import { readBudget, writeBudget, getBudgetStatus } from './usage/budget'
 import { getRelayDaemonStatus } from './relay/daemon-status'
 import {
   listLocalConfigs as _listLocalConfigs, addLocalConfig as _addLocalConfig,
@@ -340,6 +342,40 @@ export class AASEngineImpl implements AASEngine {
 
   async toggleLocalConfig(id: string): Promise<LocalRelayConfig> {
     return _toggleLocalConfig(this.paths.aasHome, id)
+  }
+
+  async getEntitlements(): Promise<Entitlements> {
+    return resolveEntitlements(this.paths.aasHome)
+  }
+
+  async syncEntitlement(token: string): Promise<Entitlements> {
+    const result = await this.client.getMyEntitlements(token)
+    if (result.error || !result.data) throw new Error(result.error ?? 'Failed to fetch entitlements')
+    await writeEntitlementCache(this.paths.aasHome, result.data.plan)
+    return entitlementsForPlan(result.data.plan)
+  }
+
+  async createCheckout(period: 'monthly' | 'yearly', token?: string): Promise<{ checkoutUrl: string }> {
+    const result = await this.client.createCheckout({ period }, { token })
+    if (result.error || !result.data) throw new Error(result.error ?? 'Failed to create checkout session')
+    return result.data
+  }
+
+  async clearEntitlement(): Promise<Entitlements> {
+    await writeEntitlementCache(this.paths.aasHome, 'free')
+    return entitlementsForPlan('free')
+  }
+
+  async getBudget(): Promise<BudgetConfig> {
+    return readBudget(this.paths.aasHome)
+  }
+
+  async setBudget(config: BudgetConfig): Promise<BudgetConfig> {
+    return writeBudget(this.paths.aasHome, config)
+  }
+
+  async getBudgetStatus(): Promise<BudgetStatus> {
+    return getBudgetStatus(this.paths.aasHome)
   }
 
   private _hasOtherEnabledProvider(registry: RegistryJson, excludeSlug: string, target: ToolTarget): boolean {

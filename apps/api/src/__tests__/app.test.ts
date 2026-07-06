@@ -67,3 +67,35 @@ test('GET /api/publishers/:slug returns 404 for unknown publisher', async () => 
   const res = await app.fetch(new Request('http://localhost/api/publishers/nope'))
   expect(res.status).toBe(404)
 })
+
+test('POST /api/webhooks/waffo rejects a bad signature with 401', async () => {
+  const res = await app.fetch(
+    new Request('http://localhost/api/webhooks/waffo', {
+      method: 'POST',
+      headers: { 'x-waffo-signature': 'not-a-real-signature' },
+      body: JSON.stringify({ id: 'DLV_1', eventType: 'subscription.activated' }),
+    })
+  )
+  expect(res.status).toBe(401)
+})
+
+test('POST /api/billing/checkout returns 501 when billing is not configured', async () => {
+  const res = await app.fetch(
+    new Request('http://localhost/api/billing/checkout', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ period: 'monthly' }),
+    })
+  )
+  expect(res.status).toBe(501)
+})
+
+test('GET /api/entitlements requires an email', async () => {
+  const res = await app.fetch(new Request('http://localhost/api/entitlements'))
+  expect(res.status).toBe(400)
+})
+
+test('GET /api/me/entitlements returns 401 without a bearer token', async () => {
+  const res = await app.fetch(new Request('http://localhost/api/me/entitlements'))
+  expect(res.status).toBe(401)
+})

@@ -2,6 +2,7 @@ import { test, expect, afterEach, spyOn, mock } from 'bun:test'
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
 import * as rpcModule from '../../lib/rpc'
 import { AppStateProvider, useAppState } from '../../state/AppState'
+import { EntitlementProvider } from '../../state/Entitlement'
 import { Overview } from '../Overview'
 import type { InstalledItem } from '@as/types'
 
@@ -27,7 +28,7 @@ test('shows a count card per category from the list RPC', async () => {
     throw new Error(`unexpected RPC in Overview test: ${method}`)
   }) as typeof rpcModule.callRpc)
 
-  render(<AppStateProvider><Overview /></AppStateProvider>)
+  render(<AppStateProvider><EntitlementProvider><Overview /></EntitlementProvider></AppStateProvider>)
 
   expect(await screen.findByText('供应商')).toBeInTheDocument()
   expect(await screen.findByText('技能')).toBeInTheDocument()
@@ -52,7 +53,7 @@ test('shows a consumption trend card with today/7-day/30-day totals', async () =
     throw new Error(`unexpected RPC in Overview test: ${method}`)
   }) as typeof rpcModule.callRpc)
 
-  render(<AppStateProvider><Overview /></AppStateProvider>)
+  render(<AppStateProvider><EntitlementProvider><Overview /></EntitlementProvider></AppStateProvider>)
 
   expect(await screen.findByText('消耗趋势')).toBeInTheDocument()
   const label = await screen.findByText('总请求数')
@@ -75,7 +76,7 @@ test('trend card shows a tab selector and switches stats between periods', async
     throw new Error(`unexpected RPC in Overview test: ${method}`)
   }) as typeof rpcModule.callRpc)
 
-  render(<AppStateProvider><Overview /></AppStateProvider>)
+  render(<AppStateProvider><EntitlementProvider><Overview /></EntitlementProvider></AppStateProvider>)
 
   const label = await screen.findByText('总请求数')
   expect(label.nextElementSibling?.textContent).toBe('3')
@@ -105,7 +106,7 @@ test('trend card shows a distinct-model count as 模型分布', async () => {
     throw new Error(`unexpected RPC in Overview test: ${method}`)
   }) as typeof rpcModule.callRpc)
 
-  render(<AppStateProvider><Overview /></AppStateProvider>)
+  render(<AppStateProvider><EntitlementProvider><Overview /></EntitlementProvider></AppStateProvider>)
 
   expect(await screen.findByText('模型分布')).toBeInTheDocument()
   const modelStat = (await screen.findByText('模型分布')).closest('div')!
@@ -128,7 +129,7 @@ test('shows a local relay status card that navigates to the local provider on cl
     throw new Error(`unexpected RPC in Overview test: ${method}`)
   }) as typeof rpcModule.callRpc)
 
-  render(<AppStateProvider><Overview /><StateProbe /></AppStateProvider>)
+  render(<AppStateProvider><EntitlementProvider><Overview /><StateProbe /></EntitlementProvider></AppStateProvider>)
 
   const card = await screen.findByText('local')
   expect(await screen.findByText(/运行中/)).toBeInTheDocument()
@@ -150,7 +151,7 @@ test('shows the 5 most recent requests and opens the proxy log modal from 查看
     throw new Error(`unexpected RPC in Overview test: ${method}`)
   }) as typeof rpcModule.callRpc)
 
-  render(<AppStateProvider><Overview /></AppStateProvider>)
+  render(<AppStateProvider><EntitlementProvider><Overview /></EntitlementProvider></AppStateProvider>)
 
   expect(await screen.findByText('最近请求')).toBeInTheDocument()
   expect(await screen.findByText(/p1/)).toBeInTheDocument()
@@ -171,7 +172,7 @@ test('recent request rows show a colored status dot and mapped client name', asy
     throw new Error(`unexpected RPC in Overview test: ${method}`)
   }) as typeof rpcModule.callRpc)
 
-  render(<AppStateProvider><Overview /></AppStateProvider>)
+  render(<AppStateProvider><EntitlementProvider><Overview /></EntitlementProvider></AppStateProvider>)
 
   expect(await screen.findByText('Claude Code')).toBeInTheDocument()
   expect(await screen.findByText('502')).toHaveClass('text-store-red')
@@ -189,7 +190,7 @@ test('shows up to 4 updatable packages with a real 更新 button', async () => {
     throw new Error(`unexpected RPC in Overview test: ${method}`)
   }) as typeof rpcModule.callRpc)
 
-  render(<AppStateProvider><Overview /></AppStateProvider>)
+  render(<AppStateProvider><EntitlementProvider><Overview /></EntitlementProvider></AppStateProvider>)
 
   expect(await screen.findByText('可更新')).toBeInTheDocument()
   expect(await screen.findByText('a')).toBeInTheDocument()

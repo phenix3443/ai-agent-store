@@ -1,4 +1,6 @@
 import { AppStateProvider, useAppState } from './state/AppState'
+import { EntitlementProvider } from './state/Entitlement'
+import { AuthProvider } from './state/Auth'
 import { TerminalLogProvider } from './state/TerminalLog'
 import { TitleBar } from './components/TitleBar'
 import { IconRail } from './components/IconRail'
@@ -38,9 +40,13 @@ function AppShell() {
 export function App() {
   return (
     <AppStateProvider>
-      <TerminalLogProvider>
-        <AppShell />
-      </TerminalLogProvider>
+      <EntitlementProvider>
+        <AuthProvider>
+          <TerminalLogProvider>
+            <AppShell />
+          </TerminalLogProvider>
+        </AuthProvider>
+      </EntitlementProvider>
     </AppStateProvider>
   )
 }

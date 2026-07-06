@@ -1,4 +1,4 @@
-import type { Item, Publisher } from '@as/types'
+import type { Item, Publisher, Plan } from '@as/types'
 
 export type Result<T> = { data: T; error: null } | { data: null; error: string }
 
@@ -116,6 +116,46 @@ export class AASClient {
 
       if (!res.ok) return { data: null, error: json.error ?? `HTTP ${res.status}` }
       return { data: { success: true }, error: null }
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : String(err) }
+    }
+  }
+
+  /** Resolves the authenticated user's plan from their Supabase session token. */
+  async getMyEntitlements(token: string): Promise<Result<{ plan: Plan }>> {
+    try {
+      const res = await this._fetch(`${this.baseUrl}/api/me/entitlements`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json() as { plan?: Plan; error?: string }
+
+      if (!res.ok) return { data: null, error: json.error ?? `HTTP ${res.status}` }
+      if (!json.plan) return { data: null, error: 'No plan in response' }
+      return { data: { plan: json.plan }, error: null }
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : String(err) }
+    }
+  }
+
+  /** Creates a Pro checkout session; pass the session token to bind the subscription to the user. */
+  async createCheckout(
+    body: { period: 'monthly' | 'yearly'; email?: string },
+    options: { token?: string } = {}
+  ): Promise<Result<{ checkoutUrl: string }>> {
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (options.token) headers['Authorization'] = `Bearer ${options.token}`
+
+      const res = await this._fetch(`${this.baseUrl}/api/billing/checkout`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      })
+      const json = await res.json() as { checkoutUrl?: string; error?: string }
+
+      if (!res.ok) return { data: null, error: json.error ?? `HTTP ${res.status}` }
+      if (!json.checkoutUrl) return { data: null, error: 'No checkoutUrl in response' }
+      return { data: { checkoutUrl: json.checkoutUrl }, error: null }
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : String(err) }
     }
