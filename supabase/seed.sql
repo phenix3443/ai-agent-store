@@ -10,9 +10,6 @@
 --    visually consistent with what the Web Store shows from its static
 --    mock module.
 
-INSERT INTO publishers (slug, name, avatar_url, tier)
-VALUES ('test-co', 'Test Co', 'https://placehold.co/64x64', 'official');
-
 INSERT INTO publishers (slug, name, avatar_url, tier, bio) VALUES
   ('anthropic', 'Anthropic', 'https://api.dicebear.com/9.x/shapes/svg?seed=anthropic', 'official', '构建 Claude 与 Claude Code 的团队官方发布。'),
   ('openai', 'OpenAI', 'https://api.dicebear.com/9.x/shapes/svg?seed=openai', 'official', 'GPT 系列模型的官方供应商配置。'),
@@ -20,63 +17,6 @@ INSERT INTO publishers (slug, name, avatar_url, tier, bio) VALUES
   ('devfox', 'devfox', 'https://api.dicebear.com/9.x/shapes/svg?seed=devfox', 'community', '独立开发者，专注前端工具技能。'),
   ('agent-store', 'Agent Store', 'https://api.dicebear.com/9.x/shapes/svg?seed=agent-store', 'official', 'Agent Store 官方内置组件。'),
   ('skyapi', 'SkyAPI', 'https://api.dicebear.com/9.x/shapes/svg?seed=skyapi', 'community', '稳定线路、免翻墙接入 Claude Code 的第三方中转服务。');
-
--- Provider: tests config step + claude/codex sync
-INSERT INTO items (
-  slug, name, description, readme_url, icon,
-  category, version, publisher_id,
-  compatible_with, tags, downloads, status,
-  install_hook, metadata
-) VALUES (
-  'openai-provider-test',
-  'OpenAI Provider Test',
-  'Test provider for local E2E verification.',
-  'https://example.com/readme',
-  'https://placehold.co/64x64',
-  'provider', '1.0.0',
-  (SELECT id FROM publishers WHERE slug = 'test-co'),
-  ARRAY['claude','codex'], ARRAY['ai','test'], 1000, 'published',
-  $${"steps":[{"type":"config","patch":{"apiKey":"","baseUrl":"https://api.openai.com/v1","model":"gpt-4o"}}]}$$,
-  $${"configSchema":{"type":"object","required":["apiKey"],"properties":{"apiKey":{"type":"string","description":"OpenAI API Key"},"baseUrl":{"type":"string","description":"Base URL","default":"https://api.openai.com/v1"},"model":{"type":"string","description":"Model","default":"gpt-4o"}}},"supportedModels":["gpt-4o","gpt-4o-mini"]}$$
-);
-
--- Skill: tests script step + skill.md copy to claude skills dir
-INSERT INTO items (
-  slug, name, description, readme_url, icon,
-  category, version, publisher_id,
-  compatible_with, tags, downloads, status,
-  install_hook, metadata
-) VALUES (
-  'hello-skill',
-  'Hello Skill',
-  'Test skill for local E2E verification.',
-  'https://example.com/readme',
-  'https://placehold.co/64x64',
-  'skill', '1.0.0',
-  (SELECT id FROM publishers WHERE slug = 'test-co'),
-  ARRAY['claude'], ARRAY['test'], 500, 'published',
-  $${"steps":[{"type":"script","command":"echo '# Hello Skill' > skill.md"}]}$$,
-  $${}$$
-);
-
--- MCP: tests script step + binary chmod + mcpServers sync
-INSERT INTO items (
-  slug, name, description, readme_url, icon,
-  category, version, publisher_id,
-  compatible_with, tags, downloads, status,
-  install_hook, metadata
-) VALUES (
-  'fs-mcp-test',
-  'FS MCP Test',
-  'Test MCP server for local E2E verification.',
-  'https://example.com/readme',
-  'https://placehold.co/64x64',
-  'mcp', '1.0.0',
-  (SELECT id FROM publishers WHERE slug = 'test-co'),
-  ARRAY['claude'], ARRAY['mcp','test'], 200, 'published',
-  $${"steps":[{"type":"script","command":"echo '#!/bin/sh' > server; echo 'echo hello' >> server; chmod +x server"},{"type":"config","patch":{"allowedPaths":["/tmp"]}}]}$$,
-  $${"transport":"stdio","serverCommand":"./server","configSchema":{"type":"object","properties":{"allowedPaths":{"type":"array","description":"Allowed filesystem paths"}}}}$$
-);
 
 -- Skill: Superpowers (Anthropic)
 INSERT INTO items (
@@ -133,44 +73,6 @@ INSERT INTO items (
   ARRAY['claude'], ARRAY['design','frontend','ui'], 31200, 4.5, 'published',
   $${"steps":[]}$$,
   $${"contentUrl":"https://example.com/content/frontend-design.zip"}$$
-);
-
--- Provider: OpenAI Provider (OpenAI)
-INSERT INTO items (
-  slug, name, description, readme_url, icon,
-  category, version, publisher_id,
-  compatible_with, tags, downloads, rating, status,
-  install_hook, metadata
-) VALUES (
-  'openai-provider',
-  'OpenAI Provider',
-  'OpenAI 官方模型接入配置，支持 GPT-4o 系列。',
-  'https://example.com/readme/openai-provider.md',
-  'https://api.dicebear.com/9.x/icons/svg?seed=openai-provider',
-  'provider', '1.8.0',
-  (SELECT id FROM publishers WHERE slug = 'openai'),
-  ARRAY['claude','codex'], ARRAY['openai','gpt'], 890000, 4.8, 'published',
-  $${"steps":[]}$$,
-  $${"configSchema":{},"supportedModels":["gpt-4o","gpt-4o-mini","gpt-4.1"]}$$
-);
-
--- Provider: YLS.me 中转 (yls-me)
-INSERT INTO items (
-  slug, name, description, readme_url, icon,
-  category, version, publisher_id,
-  compatible_with, tags, downloads, rating, status,
-  install_hook, metadata
-) VALUES (
-  'yls-me',
-  'YLS.me 中转',
-  '已验证的第三方模型中转服务，支持多模型映射与延迟监控。',
-  'https://example.com/readme/yls-me.md',
-  'https://api.dicebear.com/9.x/icons/svg?seed=yls-provider',
-  'provider', '0.9.1',
-  (SELECT id FROM publishers WHERE slug = 'yls-me'),
-  ARRAY['codex'], ARRAY['relay','proxy'], 12800, 4.2, 'published',
-  $${"steps":[]}$$,
-  $${"configSchema":{},"supportedModels":["gpt-4o","claude-3-7-sonnet"]}$$
 );
 
 -- Provider: local (built-in relay) — the endpoint Claude/Codex point at; forwards

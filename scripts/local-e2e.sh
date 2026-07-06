@@ -7,11 +7,19 @@ export AS_HOME=/tmp/as-e2e
 export CLAUDE_CONFIG_DIR=/tmp/claude-e2e
 export CODEX_CONFIG_DIR=/tmp/codex-e2e
 
-AS="$(cd "$(dirname "$0")/.." && pwd)/bin/as"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+AS="$ROOT/bin/as"
 
 echo "=== [setup] cleaning isolated dirs ==="
 rm -rf "$AS_HOME" "$CLAUDE_CONFIG_DIR" "$CODEX_CONFIG_DIR"
 mkdir -p "$AS_HOME" "$CLAUDE_CONFIG_DIR/skills" "$CODEX_CONFIG_DIR"
+
+echo ""
+echo "=== [setup] seeding E2E fixtures into the local store DB ==="
+# The E2E fixtures (test-co provider/skill/mcp) live outside the main seed so the
+# store catalog only shows real offerings; apply them here (idempotent).
+psql "${E2E_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}" \
+  -f "$ROOT/supabase/e2e-seed.sql" >/dev/null
 
 echo ""
 echo "=== search: verify store is reachable ==="
