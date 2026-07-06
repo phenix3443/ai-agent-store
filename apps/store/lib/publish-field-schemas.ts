@@ -3,6 +3,8 @@ export interface FieldSchema {
   label: string
   type: 'text' | 'url' | 'select'
   options?: string[]
+  /** 'pills' renders options as a clickable pill row instead of a native <select> */
+  widget?: 'pills'
   when?: (vals: Record<string, string>) => boolean
 }
 
@@ -18,7 +20,7 @@ export const FIELD_SCHEMAS: Record<PublishType, FieldSchema[]> = {
   skill: [
     { key: 'name', label: '名称', type: 'text' },
     { key: 'repo', label: '仓库地址', type: 'url' },
-    { key: 'category', label: '分类', type: 'select', options: ['workflow', 'design', 'documents', 'other'] },
+    { key: 'category', label: '分类', type: 'select', widget: 'pills', options: ['workflow', 'design', 'documents', 'other'] },
     { key: 'installMethod', label: '安装方式', type: 'select', options: ['zip', 'script'] },
     {
       key: 'installScript',

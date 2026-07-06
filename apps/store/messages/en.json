@@ -4,6 +4,7 @@
     "categories": { "all": "Explore", "provider": "Providers", "skill": "Skills", "mcp": "MCP" },
     "sort": { "all": "All", "new": "Newest", "popular": "Popular", "rating": "Top rated" },
     "search": { "placeholder": "Search items, tags, or descriptions…" },
+    "filters": { "verifiedOnly": "Verified only" },
     "card": { "install": "Install", "installed": "Installed" },
     "lang": { "zh": "中文", "en": "English" }
   }

@@ -2,6 +2,8 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { LayoutGrid } from 'lucide-react'
+import { CategoryGlyph } from '@/lib/item-meta'
 
 type Category = 'all' | 'provider' | 'skill' | 'mcp'
 
@@ -28,19 +30,22 @@ export function CategoryTabs({ active }: CategoryTabsProps) {
   }
 
   return (
-    <div role="tablist" className="flex gap-1 rounded-lg border border-store-border bg-store-panel p-1">
+    <div role="tablist" className="flex gap-0.5 rounded-[10px] border border-store-border bg-store-panel p-[3px]">
       {TAB_VALUES.map((value) => (
         <button
           key={value}
           role="tab"
           aria-selected={active === value}
           onClick={() => handleSelect(value)}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
             active === value
-              ? 'bg-store-panel-2 text-store-text'
+              ? 'bg-store-accent-soft text-store-accent'
               : 'text-store-text-2 hover:text-store-text'
           }`}
         >
+          <span className="text-[13px]">
+            {value === 'all' ? <LayoutGrid size={13} /> : <CategoryGlyph category={value} />}
+          </span>
           {t(value)}
         </button>
       ))}

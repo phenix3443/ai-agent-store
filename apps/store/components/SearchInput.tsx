@@ -32,10 +32,8 @@ export function SearchInput({ defaultValue = '' }: SearchInputProps) {
   const placeholder = t('placeholder')
 
   return (
-    <div className="relative">
-      <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-        <Search size={16} className="text-store-text-3" />
-      </div>
+    <div className="flex h-[34px] items-center gap-2 rounded-[10px] border border-store-border bg-store-panel px-3 focus-within:border-store-accent">
+      <Search size={14} className="shrink-0 text-store-text-3" />
       <input
         type="search"
         defaultValue={defaultValue}
@@ -43,8 +41,11 @@ export function SearchInput({ defaultValue = '' }: SearchInputProps) {
         placeholder={placeholder}
         aria-label={placeholder}
         data-pending={isPending ? '' : undefined}
-        className="w-full rounded-lg border border-store-border bg-store-panel py-2 pl-9 pr-4 text-sm text-store-text placeholder:text-store-text-3 focus:border-store-border-strong focus:outline-none"
+        className="min-w-0 flex-1 bg-transparent text-sm text-store-text placeholder:text-store-text-3 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
       />
+      <span className="shrink-0 rounded bg-store-code-bg px-1.5 py-0.5 font-mono text-[10px] text-store-text-3">
+        ⌘K
+      </span>
     </div>
   )
 }

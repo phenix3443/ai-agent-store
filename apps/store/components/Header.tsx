@@ -40,7 +40,8 @@ export function Header() {
         <LangSwitcher />
         <Link
           href="/publisher/me"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-store-accent to-store-green text-sm font-semibold text-white"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-white"
+          style={{ background: 'linear-gradient(135deg, #7c82ff, #b06ad9)' }}
         >
           Y
         </Link>

@@ -4,6 +4,7 @@ import { FeaturedCarousel } from '@/components/FeaturedCarousel'
 import { CategoryTabs } from '@/components/CategoryTabs'
 import { SortSelect } from '@/components/SortSelect'
 import { SearchInput } from '@/components/SearchInput'
+import { VerifiedToggle } from '@/components/VerifiedToggle'
 import { ItemGrid } from '@/components/ItemGrid'
 import { PublishModalTrigger } from '@/components/PublishModalTrigger'
 
@@ -12,6 +13,7 @@ interface StorePageProps {
     category?: string
     q?: string
     sort?: string
+    verified?: string
   }
 }
 
@@ -27,7 +29,12 @@ export default async function StorePage({ searchParams }: StorePageProps) {
       ? searchParams.sort
       : 'downloads'
 
-  const items = await getItems({ category, q: searchParams.q, sort })
+  const verifiedOnly = searchParams.verified === '1'
+
+  const allItems = await getItems({ category, q: searchParams.q, sort })
+  const items = verifiedOnly
+    ? allItems.filter((item) => item.publisher.tier !== 'community')
+    : allItems
   const featured = await getFeaturedItems()
 
   return (
@@ -38,10 +45,11 @@ export default async function StorePage({ searchParams }: StorePageProps) {
         <FeaturedCarousel items={featured} />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CategoryTabs active={category ?? 'all'} />
-          <div className="flex items-center gap-3">
+          <SortSelect active={sort} />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <CategoryTabs active={category ?? 'all'} />
+            <VerifiedToggle active={verifiedOnly} />
             <SearchInput defaultValue={searchParams.q} />
-            <SortSelect active={sort} />
           </div>
         </div>
 

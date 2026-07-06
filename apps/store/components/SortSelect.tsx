@@ -29,14 +29,18 @@ export function SortSelect({ active }: SortSelectProps) {
   }
 
   return (
-    <div className="flex gap-1 text-sm text-store-text-2">
+    <div className="flex gap-0.5 rounded-[10px] border border-store-border bg-store-panel p-[3px]">
       {OPTIONS.map((opt) => (
         <button
           key={opt.key}
           type="button"
           onClick={() => handleSelect(opt.value)}
           aria-pressed={active === opt.value}
-          className={`rounded-md px-2 py-1 ${active === opt.value ? 'text-store-text' : 'hover:text-store-text'}`}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+            active === opt.value
+              ? 'bg-store-accent-soft text-store-accent'
+              : 'text-store-text-2 hover:text-store-text'
+          }`}
         >
           {t(opt.key)}
         </button>
