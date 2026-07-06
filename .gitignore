@@ -16,3 +16,9 @@ bin/aas
 # secrets / build artifacts (never commit)
 g-oauth.txt
 bin/
+
+# credential files (never commit)
+*.pem
+.waffo*
+waffo-*.pem
+*-private.*
