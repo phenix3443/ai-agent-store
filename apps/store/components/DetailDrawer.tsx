@@ -72,7 +72,7 @@ export function DetailDrawer({ item, open, onOpenChange }: DetailDrawerProps) {
 
           <div className="flex items-center gap-2.5 rounded-lg border border-store-border bg-store-term-bg px-3.5 py-3">
             <span className="font-mono text-[13px] text-store-green">$</span>
-            <span className="flex-1 truncate font-mono text-[13px] text-[#e6e6ea]">aas install {item.slug}</span>
+            <span className="flex-1 truncate font-mono text-[13px] text-[#e6e6ea]">as install {item.slug}</span>
             <Copy size={15} className="shrink-0 text-store-text-2" />
           </div>
 

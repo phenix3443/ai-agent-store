@@ -80,7 +80,7 @@ export function FeaturedCarousel({ items }: FeaturedCarouselProps) {
           </p>
           <div className="mt-3 flex items-center gap-4 font-mono text-xs">
             <span className="text-store-text-3">↓ {formatDownloads(current.downloads)}</span>
-            <span className="text-store-star">★ {current.rating.toFixed(1)}</span>
+            {current.rating > 0 && <span className="text-store-star">★ {current.rating.toFixed(1)}</span>}
             <span className="text-store-text-3">v{current.version}</span>
           </div>
         </div>

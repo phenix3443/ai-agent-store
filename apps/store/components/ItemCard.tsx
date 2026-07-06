@@ -53,7 +53,7 @@ export function ItemCard({ item }: ItemCardProps) {
 
       <div className="flex items-center gap-3 text-xs">
         <span className="font-mono text-store-text-3">↓ {formatDownloads(item.downloads)}</span>
-        <span className="font-mono text-store-star">★ {item.rating.toFixed(1)}</span>
+        {item.rating > 0 && <span className="font-mono text-store-star">★ {item.rating.toFixed(1)}</span>}
         <span className="flex-1" />
         <button
           type="button"

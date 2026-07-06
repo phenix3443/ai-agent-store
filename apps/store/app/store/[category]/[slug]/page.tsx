@@ -41,7 +41,7 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
         <div className="rounded-xl border border-store-border bg-store-panel p-4">
           <p className="mb-2 text-sm font-medium text-store-text">Install</p>
           <code className="block rounded-lg border border-store-border bg-store-content px-3 py-2 font-mono text-xs text-store-text">
-            aas install {item.slug}
+            as install {item.slug}
           </code>
         </div>
       </main>
