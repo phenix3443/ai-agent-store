@@ -17,11 +17,16 @@ setup:
 seed:
 	supabase db reset
 
-## Start web store test environment: Supabase (if not running) + store on :3000.
-## The store UI reads mock data (lib/mock/*), not live Supabase queries, so this
-## is already isolated from any real backend beyond the local Docker Supabase.
+## Start web store test environment: Supabase (if not running) + catalog API on
+## :3001 (background) + store on :3000. The store reads its catalog from the API
+## server (same source as the CLI) via API_URL; the API reads Supabase creds from
+## apps/store/.env.local.
 dev:
 	supabase start
+	set -a; . apps/store/.env.local; set +a; \
+	PORT=3001 pnpm --filter=@as/api start & API_PID=$$!; \
+	trap "kill $$API_PID 2>/dev/null" EXIT; \
+	API_URL=http://127.0.0.1:3001 \
 	pnpm --filter=@as/store dev
 
 ## Start the standalone catalog API server (apps/api) on :3001.

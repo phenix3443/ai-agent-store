@@ -18,6 +18,18 @@ mock.module('next-intl', () => ({
   useTranslations: () => (key: string) => key.split('.').pop() ?? key,
 }))
 
+// The store page now fetches its catalog from the API server via @/lib/catalog.
+// Back the mock with the offline mock catalog so the page renders deterministic
+// data without hitting the network.
+const {
+  getItems: mockGetItems,
+  getFeaturedItems: mockGetFeaturedItems,
+} = await import('../../../lib/mock/items')
+mock.module('@/lib/catalog', () => ({
+  getItems: async (opts: Parameters<typeof mockGetItems>[0]) => mockGetItems(opts),
+  getFeaturedItems: async () => mockGetFeaturedItems(),
+}))
+
 const { default: StorePage } = await import('../page')
 const { ClientStateProvider } = await import('../../../components/ClientStateProvider')
 

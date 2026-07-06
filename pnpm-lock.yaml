@@ -147,6 +147,9 @@ importers:
 
   apps/store:
     dependencies:
+      '@as/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@as/types':
         specifier: workspace:*
         version: link:../../packages/types

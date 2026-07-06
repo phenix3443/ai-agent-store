@@ -1,27 +1,16 @@
-'use client'
-
-import { useRouter } from 'next/navigation'
-import { getPublisherBySlug, getPublisherItems } from '@/lib/mock/items'
-import { PublisherDrawer } from '@/components/PublisherDrawer'
+import { getPublisherBySlug, getPublisherItems } from '@/lib/catalog'
+import { InterceptedPublisher } from '@/components/InterceptedPublisher'
 
 interface InterceptedPublisherProps {
   params: { name: string }
 }
 
-export default function InterceptedPublisherDrawer({ params }: InterceptedPublisherProps) {
-  const router = useRouter()
-  const publisher = getPublisherBySlug(params.name)
+export default async function InterceptedPublisherDrawer({ params }: InterceptedPublisherProps) {
+  const publisher = await getPublisherBySlug(params.name)
 
   if (!publisher) return null
 
-  return (
-    <PublisherDrawer
-      publisher={publisher}
-      items={getPublisherItems(params.name)}
-      open
-      onOpenChange={(open) => {
-        if (!open) router.back()
-      }}
-    />
-  )
+  const items = await getPublisherItems(params.name)
+
+  return <InterceptedPublisher publisher={publisher} items={items} />
 }

@@ -1,4 +1,4 @@
-import { getItems, getFeaturedItems } from '@/lib/mock/items'
+import { getItems, getFeaturedItems } from '@/lib/catalog'
 import { Header } from '@/components/Header'
 import { FeaturedCarousel } from '@/components/FeaturedCarousel'
 import { CategoryTabs } from '@/components/CategoryTabs'
@@ -27,8 +27,8 @@ export default async function StorePage({ searchParams }: StorePageProps) {
       ? searchParams.sort
       : 'downloads'
 
-  const items = getItems({ category, q: searchParams.q, sort })
-  const featured = getFeaturedItems()
+  const items = await getItems({ category, q: searchParams.q, sort })
+  const featured = await getFeaturedItems()
 
   return (
     <>

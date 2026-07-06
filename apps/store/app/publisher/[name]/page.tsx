@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getPublisherBySlug, getPublisherItems } from '@/lib/mock/items'
+import { getPublisherBySlug, getPublisherItems } from '@/lib/catalog'
 import { ItemCard } from '@/components/ItemCard'
 import { Badge } from '@/components/Badge'
 import { Header } from '@/components/Header'
@@ -8,11 +8,11 @@ interface PublisherPageProps {
   params: { name: string }
 }
 
-export default function PublisherPage({ params }: PublisherPageProps) {
-  const publisher = getPublisherBySlug(params.name)
+export default async function PublisherPage({ params }: PublisherPageProps) {
+  const publisher = await getPublisherBySlug(params.name)
   if (!publisher) notFound()
 
-  const items = getPublisherItems(params.name)
+  const items = await getPublisherItems(params.name)
 
   return (
     <>

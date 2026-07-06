@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getItemBySlug } from '@/lib/mock/items'
+import { getItemBySlug } from '@/lib/catalog'
 import { Badge } from '@/components/Badge'
 import { Header } from '@/components/Header'
 
@@ -7,8 +7,8 @@ interface ItemDetailPageProps {
   params: { category: string; slug: string }
 }
 
-export default function ItemDetailPage({ params }: ItemDetailPageProps) {
-  const item = getItemBySlug(params.slug)
+export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
+  const item = await getItemBySlug(params.slug)
 
   if (!item || item.category !== params.category) notFound()
 

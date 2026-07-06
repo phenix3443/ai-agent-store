@@ -11,6 +11,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@as/sdk": "workspace:*",
     "@as/types": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.1",
     "@supabase/ssr": "^0.1.0",
