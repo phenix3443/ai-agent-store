@@ -41,21 +41,16 @@
 
 ---
 
-## D. Waffo 支付（等 KYB 通过 / 拿到凭证后）
+## D. Waffo 支付（test 环境）—— ✅ 端到端已跑通并验证
 
-- [ ] 在 Waffo Dashboard 创建 Pro **月/年订阅产品**，记下 Product ID
-  - 打开：https://pancake.waffo.ai/merchant/dashboard/integration
-- [ ] 取 `WAFFO_MERCHANT_ID` 和 RSA 私钥（同上页面 · API & Development）
-- [ ] 配 webhook（channel=http），指向：
-  `https://as-api-test.phenix3443.workers.dev/api/webhooks/waffo`
-  订阅事件：`subscription.activated` / `subscription.payment_succeeded` / `subscription.canceling` / `subscription.canceled` / `subscription.past_due`
-- [ ] 设为 Cloudflare Worker secret：
-  ```bash
-  wrangler secret put WAFFO_MERCHANT_ID --env test
-  wrangler secret put WAFFO_PRIVATE_KEY_BASE64 --env test   # cat private.pem | base64 | tr -d '\n'
-  wrangler secret put WAFFO_PRODUCT_ID_PRO_MONTHLY --env test
-  wrangler secret put WAFFO_PRODUCT_ID_PRO_YEARLY --env test
-  ```
+- [x] 店铺 `ai-store` (STO_1RVfXdLKHdCzlWEN8VeEft) + Pro 月/年产品 + webhook 已用 `scripts/waffo-setup.ts` 自动建好
+- [x] 4 个 Worker secret 已灌（MERCHANT_ID / PRIVATE_KEY_BASE64 / PRODUCT_ID 月·年）
+- [x] 真实测试付款（卡 4576…0110）→ webhook → subscriptions 表 → `/api/entitlements=pro` **全通**
+
+### 上真实收款（KYB 过后）
+- [ ] Waffo 完成 KYB / 生产资质审核
+- [ ] 换成 **prod** 凭证重跑 `scripts/waffo-setup.ts`（`WAFFO_TEST=false`）+ 产品 `.publish()`
+- [ ] Worker secret 换成 prod 值（同名，`--env production`）
 
 ---
 
