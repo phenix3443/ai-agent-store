@@ -2,79 +2,97 @@
 
 import type { Item } from '@as/types'
 import Link from 'next/link'
-import { Heart, Star } from 'lucide-react'
-import { Badge } from './Badge'
+import { Check, CheckCircle2, Heart } from 'lucide-react'
+import { CATEGORY_META, CategoryGlyph, formatDownloads } from '@/lib/item-meta'
 import { useClientState } from './ClientStateProvider'
 
 interface ItemCardProps {
   item: Item
 }
 
-export function formatDownloads(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return String(n)
-}
-
 export function ItemCard({ item }: ItemCardProps) {
   const { favorites, toggleFavorite, installed, toggleInstalled } = useClientState()
   const isFavorite = !!favorites[item.id]
   const isInstalled = !!installed[item.id]
+  const cat = CATEGORY_META[item.category]
+  const tier = item.publisher.tier
 
   return (
-    <div className="group relative flex flex-col gap-3 rounded-xl border border-store-border bg-store-panel p-4 transition-colors hover:border-store-border-strong">
-      <button
-        type="button"
-        aria-label={isFavorite ? '取消收藏' : '收藏'}
-        onClick={(e) => {
-          e.preventDefault()
-          toggleFavorite(item.id)
-        }}
-        className="absolute right-3 top-3 z-10"
-      >
-        <Heart size={16} className={isFavorite ? 'fill-store-red text-store-red' : 'text-store-text-3'} />
-      </button>
-
-      <Link href={`/store/${item.category}/${item.slug}`} className="flex flex-col gap-3">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-store-border bg-store-panel-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.icon} alt={item.name} className="h-8 w-8 object-contain" />
+    <Link
+      href={`/store/${item.category}/${item.slug}`}
+      className="group flex flex-col gap-3 rounded-xl border border-store-border bg-store-panel p-4 transition-colors hover:border-store-border-strong"
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[20px]"
+          style={{ background: cat.soft, color: cat.color }}
+        >
+          <CategoryGlyph category={item.category} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <h3 className="truncate font-mono text-sm font-bold text-store-text">{item.name}</h3>
+            {(tier === 'official' || tier === 'verified') && (
+              <CheckCircle2
+                size={13}
+                className={`shrink-0 ${tier === 'official' ? 'text-store-amber' : 'text-[#58a6f0]'}`}
+              />
+            )}
           </div>
-          <div className="min-w-0 flex-1 pr-6">
-            <h3 className="truncate text-sm font-medium text-store-text">{item.name}</h3>
-            <div className="mt-1 flex flex-wrap items-center gap-1">
-              <Badge variant={item.publisher.tier}>{item.publisher.tier}</Badge>
-              <Badge variant={item.category}>{item.category}</Badge>
-            </div>
-          </div>
+          <p className="mt-0.5 truncate text-xs text-store-text-3">{item.publisher.name}</p>
         </div>
+        <span
+          className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold"
+          style={{ background: cat.soft, color: cat.color }}
+        >
+          {cat.label}
+        </span>
+      </div>
 
-        <p className="line-clamp-2 text-xs text-store-text-2">{item.description}</p>
+      <p className="line-clamp-2 text-xs leading-relaxed text-store-text-2">{item.description}</p>
 
-        <div className="flex items-center gap-1 text-xs text-store-amber">
-          <Star size={12} className="fill-store-amber" />
-          {item.rating.toFixed(1)}
-        </div>
-
-        <div className="flex items-center justify-between text-xs text-store-text-3">
-          <span>{item.compatibleWith.join(' · ')}</span>
-          <span>{formatDownloads(item.downloads)} installs</span>
-        </div>
-      </Link>
-
-      <button
-        type="button"
-        aria-label={isInstalled ? '已安装' : '安装'}
-        onClick={() => toggleInstalled(item.id)}
-        className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-          isInstalled
-            ? 'bg-store-green/10 text-store-green'
-            : 'bg-store-accent text-white hover:opacity-90'
-        }`}
-      >
-        {isInstalled ? '已安装' : '安装'}
-      </button>
-    </div>
+      <div className="flex items-center gap-3 text-xs">
+        <span className="font-mono text-store-text-3">↓ {formatDownloads(item.downloads)}</span>
+        <span className="font-mono text-store-star">★ {item.rating.toFixed(1)}</span>
+        <span className="flex-1" />
+        <button
+          type="button"
+          aria-label={isFavorite ? '取消收藏' : '收藏'}
+          onClick={(e) => {
+            e.preventDefault()
+            toggleFavorite(item.id)
+          }}
+          className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-store-code-bg"
+        >
+          <Heart size={15} className={isFavorite ? 'fill-store-red text-store-red' : 'text-store-text-3'} />
+        </button>
+        {isInstalled ? (
+          <button
+            type="button"
+            aria-label="已安装"
+            onClick={(e) => {
+              e.preventDefault()
+              toggleInstalled(item.id)
+            }}
+            className="flex items-center gap-1 text-xs font-semibold text-store-green"
+          >
+            <Check size={13} />
+            已装
+          </button>
+        ) : (
+          <button
+            type="button"
+            aria-label="安装"
+            onClick={(e) => {
+              e.preventDefault()
+              toggleInstalled(item.id)
+            }}
+            className="rounded-md border border-store-border-strong bg-store-panel-2 px-3 py-1 text-xs font-semibold text-store-text hover:border-store-accent hover:text-store-accent"
+          >
+            安装
+          </button>
+        )}
+      </div>
+    </Link>
   )
 }

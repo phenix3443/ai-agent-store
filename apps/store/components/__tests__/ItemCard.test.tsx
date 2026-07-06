@@ -72,17 +72,17 @@ test('ItemCard renders description', () => {
 
 test('ItemCard renders formatted downloads: 1.2M', () => {
   renderCard()
-  expect(screen.getByText('1.2M installs')).toBeInTheDocument()
+  expect(screen.getByText('↓ 1.2M')).toBeInTheDocument()
 })
 
 test('ItemCard renders 999 downloads without abbreviation', () => {
   renderCard({ ...mockItem, downloads: 999 })
-  expect(screen.getByText('999 installs')).toBeInTheDocument()
+  expect(screen.getByText('↓ 999')).toBeInTheDocument()
 })
 
 test('ItemCard renders 1500 downloads as 1.5K', () => {
   renderCard({ ...mockItem, downloads: 1500 })
-  expect(screen.getByText('1.5K installs')).toBeInTheDocument()
+  expect(screen.getByText('↓ 1.5K')).toBeInTheDocument()
 })
 
 test('ItemCard links to correct detail page', () => {
@@ -91,9 +91,9 @@ test('ItemCard links to correct detail page', () => {
   expect(link.getAttribute('href')).toBe('/store/provider/openai-provider')
 })
 
-test('ItemCard renders compat tools', () => {
+test('ItemCard renders the publisher name', () => {
   renderCard()
-  expect(screen.getByText('claude · codex')).toBeInTheDocument()
+  expect(screen.getByText('OpenAI')).toBeInTheDocument()
 })
 
 test('ItemCard clicking favorite toggles aria-label', () => {
@@ -107,5 +107,5 @@ test('ItemCard clicking install shows installed state', () => {
   renderCard()
   const installButton = screen.getByLabelText('安装')
   fireEvent.click(installButton)
-  expect(screen.getByText('已安装')).toBeInTheDocument()
+  expect(screen.getByText('已装')).toBeInTheDocument()
 })
