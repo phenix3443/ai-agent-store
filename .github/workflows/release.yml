@@ -77,6 +77,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Pin the toolchain so tauri's universal target detection sees both arch targets.
           RUSTUP_TOOLCHAIN: stable
+          # macOS Developer ID signing + notarization. Left empty until an Apple
+          # Developer account is approved and these secrets are added — while empty,
+          # tauri-action produces the current unsigned build. Once set, it signs and
+          # notarizes automatically with no further changes.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           projectPath: apps/cli-gui
           args: ${{ matrix.tauri-args }}

@@ -10,11 +10,16 @@
 
 ## 1. 桌面端代码签名
 
-### macOS —— ⏳ 已申请 Apple Developer，等审核
+### macOS —— ⏳ 已申请 Apple Developer，等审核（**CI 已预接线，只等证书**）
+- [x] CI 已接入 `.github/workflows/release.yml`（引用好 6 个 `APPLE_*` secret，空值时仍出未签名包）
 - [ ] Apple Developer Program 审核通过（$99/年，**已提交申请，等待中**）
-- [ ] 通过后拿到 Developer ID Application 证书 + 公证凭据，给我（走 GitHub Secrets，不进代码）：
-      `APPLE_CERTIFICATE`(base64 .p12) / `APPLE_CERTIFICATE_PASSWORD` / `APPLE_SIGNING_IDENTITY` / `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID`
-- [ ] 我接进 `.github/workflows/release.yml`，之后 macOS 下载零提示（消除「已损坏」）
+- [ ] 通过后在 GitHub 仓库 Settings → Secrets and variables → Actions 添加这 6 个（加完下次发版自动签名+公证）：
+      - `APPLE_CERTIFICATE` — Developer ID Application 证书导出的 .p12 再 base64：`base64 -i cert.p12 | pbcopy`
+      - `APPLE_CERTIFICATE_PASSWORD` — 导出 .p12 时设的密码
+      - `APPLE_SIGNING_IDENTITY` — 形如 `Developer ID Application: 你的名字 (TEAMID)`
+      - `APPLE_ID` — 你的 Apple ID 邮箱
+      - `APPLE_PASSWORD` — App 专用密码（appleid.apple.com 生成，**非**登录密码）
+      - `APPLE_TEAM_ID` — 10 位 Team ID
 
 ### Windows 代码签名 —— 未开始（可选，后续）
 - [ ] Windows OV/EV 证书，消除 SmartScreen「未知发布者」
