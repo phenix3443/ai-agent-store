@@ -16,7 +16,7 @@
 //
 // Run: bun scripts/crawl-catalog.ts   (or: bun run crawl:catalog)
 
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -628,6 +628,27 @@ async function publishToDb(publishers: CrawledPublisher[], items: CrawledItem[])
   console.log(`Published: ${publishers.length} publishers, ${rows.length} items (pending, source=crawler), skipped ${userOwned.size} user-owned`)
 }
 
+// ── Manifest mode: write one self-contained JSON manifest per package ─────────
+// Bootstraps / updates the ai-agent-store/registry repo, where each package is a
+// file reviewed via PR. The publisher is embedded so each manifest stands alone.
+function writeManifests(dir: string, publisherMap: Map<string, CrawledPublisher>, items: CrawledItem[]): void {
+  for (const item of items) {
+    const { publisherSlug, ...rest } = item
+    const pub = publisherMap.get(publisherSlug)
+    const manifest = {
+      $schema: '../schema/package.schema.json',
+      ...rest,
+      publisher: pub
+        ? { slug: pub.slug, name: pub.name, tier: pub.tier, avatarUrl: pub.avatarUrl, bio: pub.bio }
+        : { slug: publisherSlug, name: publisherSlug, tier: 'community', avatarUrl: '', bio: null },
+    }
+    const catDir = join(dir, item.category)
+    mkdirSync(catDir, { recursive: true })
+    writeFileSync(join(catDir, `${item.slug}.json`), JSON.stringify(manifest, null, 2) + '\n')
+  }
+  console.log(`Wrote ${items.length} manifests to ${dir}/`)
+}
+
 async function main() {
   console.log(`Crawling catalog (PER_CATEGORY_LIMIT=${PER_CATEGORY_LIMIT})...`)
 
@@ -665,6 +686,13 @@ async function main() {
   // regenerating the local seed file.
   if (process.argv.includes('--publish')) {
     await publishToDb(crawledPublishers, items)
+    return
+  }
+
+  // Manifest mode: write per-package JSON files for the registry repo.
+  const manifestsIdx = process.argv.indexOf('--manifests')
+  if (manifestsIdx !== -1) {
+    writeManifests(process.argv[manifestsIdx + 1] ?? 'registry', publishers, items)
     return
   }
 
