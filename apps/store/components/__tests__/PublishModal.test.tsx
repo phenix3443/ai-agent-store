@@ -41,31 +41,27 @@ test('mcp transport=stdio shows command field, hides url field', () => {
   expect(screen.queryByLabelText('远程地址')).not.toBeInTheDocument()
 })
 
-test('submitting opens a registry PR and shows the PR link', async () => {
-  const originalFetch = globalThis.fetch
-  let sentUrl = ''
-  globalThis.fetch = (async (url: RequestInfo | URL) => {
-    sentUrl = String(url)
-    return new Response(JSON.stringify({ url: 'https://github.com/ai-agent-store/registry/pull/1' }), { status: 201 })
-  }) as typeof fetch
+test('submitting opens a GitHub prefilled new-file page for the registry', async () => {
+  const opened: string[] = []
+  const originalOpen = window.open
+  window.open = ((url?: string | URL) => { opened.push(String(url)); return null }) as typeof window.open
 
-  renderModal()
+  const onOpenChange = mock(() => {})
+  renderModal(onOpenChange)
   fireEvent.change(screen.getByLabelText('名称'), { target: { value: 'My Provider' } })
   fireEvent.click(screen.getByText('发布'))
 
-  await waitFor(() => expect(screen.getByText('已提交为 PR 🎉')).toBeInTheDocument())
-  expect(sentUrl.endsWith('/api/submit')).toBe(true)
+  await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
+  expect(opened[0]).toContain('github.com/ai-agent-store/registry/new/main')
+  expect(opened[0]).toContain('provider%2Fmy-provider.json')
 
-  globalThis.fetch = originalFetch
+  window.open = originalOpen
 })
 
-test('mcp http submits headers as parsed JSON in the request body', async () => {
-  const originalFetch = globalThis.fetch
-  let sentBody: { metadata?: { headers?: Record<string, string> } } | undefined
-  globalThis.fetch = (async (_url: RequestInfo | URL, init?: RequestInit) => {
-    sentBody = JSON.parse(init?.body as string)
-    return new Response(JSON.stringify({ url: 'https://github.com/x/pull/2' }), { status: 201 })
-  }) as typeof fetch
+test('mcp http encodes parsed headers into the prefilled manifest', async () => {
+  const opened: string[] = []
+  const originalOpen = window.open
+  window.open = ((url?: string | URL) => { opened.push(String(url)); return null }) as typeof window.open
 
   renderModal()
   fireEvent.click(screen.getByText('MCP'))
@@ -74,7 +70,8 @@ test('mcp http submits headers as parsed JSON in the request body', async () => 
   fireEvent.change(screen.getByLabelText('Headers（JSON）'), { target: { value: '{"Authorization": "Bearer xyz"}' } })
   fireEvent.click(screen.getByText('发布'))
 
-  await waitFor(() => expect(sentBody?.metadata?.headers).toEqual({ Authorization: 'Bearer xyz' }))
+  await waitFor(() => expect(opened.length).toBe(1))
+  expect(decodeURIComponent(opened[0])).toContain('"Authorization": "Bearer xyz"')
 
-  globalThis.fetch = originalFetch
+  window.open = originalOpen
 })

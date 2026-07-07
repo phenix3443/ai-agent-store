@@ -114,27 +114,6 @@ export class StoreClient {
     }
   }
 
-  /** Submits a package: opens a PR against the registry and returns the PR url. */
-  async submitPackage(manifest: SubmitManifest, options: { token?: string } = {}): Promise<Result<{ url: string }>> {
-    try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (options.token) headers['Authorization'] = `Bearer ${options.token}`
-
-      const res = await this._fetch(`${this.baseUrl}/api/submit`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(manifest),
-      })
-      const json = await res.json() as { url?: string; error?: string }
-
-      if (!res.ok) return { data: null, error: json.error ?? `HTTP ${res.status}` }
-      if (!json.url) return { data: null, error: 'No PR url in response' }
-      return { data: { url: json.url }, error: null }
-    } catch (err) {
-      return { data: null, error: err instanceof Error ? err.message : String(err) }
-    }
-  }
-
   /** Resolves the authenticated user's plan from their Supabase session token. */
   async getMyEntitlements(token: string): Promise<Result<{ plan: Plan }>> {
     try {

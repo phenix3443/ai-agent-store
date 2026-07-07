@@ -2,12 +2,12 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { useState } from 'react'
-import { StoreClient, type SubmitManifest } from '@as/sdk'
+import type { SubmitManifest } from '@as/sdk'
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORY_META, CategoryGlyph } from '@/lib/item-meta'
 import { FIELD_SCHEMAS, type PublishType } from '@/lib/publish-field-schemas'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:3001'
+const REGISTRY_URL = 'https://github.com/ai-agent-store/registry'
 
 interface PublishModalProps {
   open: boolean
@@ -63,7 +63,6 @@ export function PublishModal({ open, onOpenChange }: PublishModalProps) {
   const [vals, setVals] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [prUrl, setPrUrl] = useState<string | null>(null)
 
   const fields = FIELD_SCHEMAS[type].filter((f) => !f.when || f.when(vals))
 
@@ -73,20 +72,21 @@ export function PublishModal({ open, onOpenChange }: PublishModalProps) {
     setError(null)
     setBusy(true)
     try {
+      // Open GitHub's prefilled "new file" page: the user's own browser session
+      // forks the registry and opens a PR when they commit — no bot token needed.
       const { data: { session } } = await createClient().auth.getSession()
-      if (!session) {
-        setError('请先登录后再发布')
-        return
+      const username = (session?.user?.user_metadata?.['user_name'] as string) || 'community'
+      const manifest = {
+        $schema: '../schema/package.schema.json',
+        ...buildManifest(type, vals),
+        publisher: { slug: username, name: username, tier: 'community' },
       }
-      const result = await new StoreClient(API_URL).submitPackage(buildManifest(type, vals), {
-        token: session.access_token,
-      })
-      if (!result.data) {
-        setError(result.error ?? '提交失败')
-        return
-      }
+      const path = `${manifest.category}/${manifest.slug}.json`
+      const value = encodeURIComponent(JSON.stringify(manifest, null, 2))
+      const url = `${REGISTRY_URL}/new/main?filename=${encodeURIComponent(path)}&value=${value}`
+      window.open(url, '_blank', 'noopener,noreferrer')
       setVals({})
-      setPrUrl(result.data.url)
+      onOpenChange(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : '发布失败')
     } finally {
@@ -104,27 +104,6 @@ export function PublishModal({ open, onOpenChange }: PublishModalProps) {
             <p className="mt-0.5 font-mono text-[11.5px] text-store-text-3">agent-store publish</p>
           </div>
 
-          {prUrl ? (
-            <div className="px-6 py-8 text-center">
-              <p className="text-sm font-semibold text-store-text">已提交为 PR 🎉</p>
-              <p className="mt-2 text-[13px] text-store-text-2">审核合并后即上架，可在此查看进度：</p>
-              <a
-                href={prUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-block break-all text-[13px] text-store-accent underline"
-              >
-                {prUrl}
-              </a>
-              <button
-                type="button"
-                onClick={() => { setPrUrl(null); onOpenChange(false) }}
-                className="mt-6 w-full rounded-lg bg-store-accent px-4 py-2.5 text-sm font-semibold text-white hover:brightness-110"
-              >
-                完成
-              </button>
-            </div>
-          ) : (
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <div className="flex flex-col gap-4 overflow-y-auto px-6 py-5">
               <div>
@@ -226,7 +205,6 @@ export function PublishModal({ open, onOpenChange }: PublishModalProps) {
               </button>
             </div>
           </form>
-          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

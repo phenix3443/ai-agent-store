@@ -7,7 +7,6 @@ import { getWaffoClient, proProductId, checkoutSuccessUrl, type WaffoEnv, type B
 import { subscriptionRecordFromEvent } from './billing'
 import { getAuthUser } from './auth'
 import { getMyItems } from './publisher-items'
-import { submitToRegistry, validateSubmit, type RegistryEnv, type SubmitManifest } from './registry-submit'
 import {
   isWebhookProcessed,
   markWebhookProcessed,
@@ -19,7 +18,7 @@ import {
 // On Cloudflare Workers, secrets arrive as the fetch handler's `env` (Hono c.env).
 // On local Bun (Bun.serve), c.env is the Bun server object with no such keys, so
 // getSupabase()/getWaffoClient() fall back to process.env.
-export const app = new Hono<{ Bindings: SupabaseEnv & WaffoEnv & RegistryEnv }>()
+export const app = new Hono<{ Bindings: SupabaseEnv & WaffoEnv }>()
 
 app.use('/api/*', cors())
 
@@ -71,28 +70,6 @@ app.get('/api/me/items', async (c) => {
   const { data, error } = await getMyItems(c.env, user.username)
   if (error) return c.json({ error: 'Failed to fetch items' }, 500)
   return c.json({ items: data })
-})
-
-// Submit a package: opens a PR against the registry on the user's behalf so the
-// contribution goes through the same validate + review as any other.
-app.post('/api/submit', async (c) => {
-  const user = await getAuthUser(c.env, c.req.header('Authorization'))
-  if (!user) return c.json({ error: 'Unauthorized' }, 401)
-  if (!user.username) return c.json({ error: 'GitHub username not found' }, 422)
-
-  let manifest: SubmitManifest
-  try {
-    manifest = (await c.req.json()) as SubmitManifest
-  } catch {
-    return c.json({ error: 'Invalid JSON' }, 400)
-  }
-
-  const invalid = validateSubmit(manifest)
-  if (invalid) return c.json({ error: invalid }, 422)
-
-  const result = await submitToRegistry(c.env, manifest, { slug: user.username, name: user.username })
-  if ('error' in result) return c.json({ error: result.error }, result.status)
-  return c.json({ url: result.url }, 201)
 })
 
 // ── Billing (Waffo Pancake, Merchant of Record) ──────────────────────────────
