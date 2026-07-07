@@ -44,6 +44,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Build the internal library packages (@as/types → sdk → client-core) to dist/,
+      # which the sidecar compile and the frontend build resolve. turbo builds their
+      # dependency graph in order via the build task's `^build` dependency.
+      - name: Build workspace libraries
+        run: pnpm exec turbo build --filter=@as/client-core
+
       # Compile the `as` CLI into the sidecar binary Tauri bundles (binaries/as-<triple>).
       - name: Build sidecar
         shell: bash
