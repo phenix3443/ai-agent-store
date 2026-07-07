@@ -41,5 +41,20 @@ export function openUsageDb(aasHome: string): Database {
     )
   `)
 
+  // Per-provider circuit-breaker state, updated from real request outcomes.
+  // Shared on disk so the relay daemon writes it and the RPC process reads it.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS provider_health (
+      provider_slug TEXT PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'up',
+      consecutive_failures INTEGER NOT NULL DEFAULT 0,
+      cooldown_until INTEGER,
+      last_error_kind TEXT,
+      last_status INTEGER,
+      last_error_at TEXT,
+      updated_at TEXT NOT NULL
+    )
+  `)
+
   return db
 }

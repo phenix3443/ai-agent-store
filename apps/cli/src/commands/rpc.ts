@@ -19,6 +19,7 @@ const RPC_METHODS: Record<string, RpcHandler> = {
   getUsageSummary: (e, a) => e.getUsageSummary(a[0] as UsageSummaryOptions | undefined),
   getRecentRequests: (e, a) => e.getRecentRequests(a[0] as { limit?: number } | undefined),
   getRelayStatus: (e) => e.getRelayStatus(),
+  getProviderHealth: (e) => e.getProviderHealth(),
   parsePricingFromUrl: (e, a) => e.parsePricingFromUrl(a[0] as string),
   listLocalConfigs: (e) => e.listLocalConfigs(),
   addLocalConfig: (e, a) => e.addLocalConfig(a[0] as string),

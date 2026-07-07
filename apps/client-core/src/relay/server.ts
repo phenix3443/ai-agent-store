@@ -3,6 +3,7 @@ import { readRegistry } from '../registry/index'
 import { findOrderedProvidersForTarget } from './provider-order'
 import { forwardWithFailover } from './forward'
 import { recordUsageAsync } from '../usage/record-usage'
+import { recordProviderHealthBatch, type ProviderAttempt } from '../usage/provider-health'
 
 export const RELAY_PORT = 18780
 
@@ -41,6 +42,7 @@ export function startRelayServer(options: RelayServerOptions): { stop: () => voi
         : undefined
 
       const startedAt = Date.now()
+      const attempts: ProviderAttempt[] = []
       const { response: upstreamResponse, usedSlug, isFallback } = await forwardWithFailover(
         url.pathname,
         body,
@@ -56,8 +58,12 @@ export function startRelayServer(options: RelayServerOptions): { stop: () => voi
           endpointPath: connection.endpointPath,
           whitelist: connection.whitelist,
         })),
-        fetchImpl
+        fetchImpl,
+        (attempt) => attempts.push(attempt)
       )
+      // Update circuit-breaker health from every attempt (including failed-over ones),
+      // off the response path.
+      recordProviderHealthBatch(aasHome, attempts)
 
       const usedConnection = eligible.find(({ item }) => item.slug === usedSlug)!.connection
       const contentType = upstreamResponse.headers.get('content-type') ?? ''

@@ -16,6 +16,7 @@ export type {
   UsageSummaryRow,
   UsageSummaryOptions,
   RecentRequestRow,
+  ProviderHealth,
   RelayStatus,
   LocalRelayConfig,
   BudgetConfig,

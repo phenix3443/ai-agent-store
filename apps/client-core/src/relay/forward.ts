@@ -51,12 +51,18 @@ export interface FailoverResult {
   isFallback: boolean
 }
 
+// Reports each real upstream attempt outcome (success or failure) so callers can
+// track per-provider health. statusCode is null when the request threw. Whitelist
+// rejections are not attempts and are not reported.
+export type AttemptReporter = (attempt: { slug: string; statusCode: number | null; latencyMs: number }) => void
+
 export async function forwardWithFailover(
   defaultPath: string,
   body: unknown,
   requestedModel: string | undefined,
   candidates: FailoverCandidate[],
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  onAttempt?: AttemptReporter
 ): Promise<FailoverResult> {
   let lastResponse: Response | undefined
   let lastIndex = 0
@@ -73,16 +79,20 @@ export async function forwardWithFailover(
       continue
     }
 
+    const attemptStart = Date.now()
     let response: Response
     try {
       response = await forwardRequest(candidate.endpointPath || defaultPath, body, candidate.connection, fetchImpl)
     } catch (err) {
+      onAttempt?.({ slug: candidate.slug, statusCode: null, latencyMs: Date.now() - attemptStart })
       lastResponse = Response.json(
         { error: `upstream request to ${candidate.slug} failed: ${String(err)}` },
         { status: 502 }
       )
       continue
     }
+
+    onAttempt?.({ slug: candidate.slug, statusCode: response.status, latencyMs: Date.now() - attemptStart })
 
     if (response.status >= 500) {
       lastResponse = response

@@ -4,7 +4,7 @@ import type {
   Engine, Paths, InstallResult, SyncResult, UpdateAvailable, UpdateResult,
   ListOptions, InstalledItem, ItemDetail, ToolTarget, SearchOptions, Item, JsonSchema,
   UsageSummaryRow, UsageSummaryOptions, ModelPricing, RegistryJson, LocalRelayConfig,
-  RecentRequestRow, RelayStatus, Entitlements, BudgetConfig, BudgetStatus,
+  RecentRequestRow, RelayStatus, ProviderHealth, Entitlements, BudgetConfig, BudgetStatus,
 } from '@as/types'
 import { StoreClient } from '@as/sdk'
 import { resolvePaths, itemDir } from './paths'
@@ -19,6 +19,7 @@ import { syncItemToCodex, enableRelayForCodex, disableRelayForCodex } from './co
 import { checkUpdates as _checkUpdates, applyUpdate } from './updater/index'
 import { duplicateProviderConnection } from './config/provider'
 import { getDailySummary, getRecentRequests } from './usage/queries'
+import { readProviderHealth } from './usage/provider-health'
 import { exportUsageToFile } from './usage/export'
 import { resolveEntitlements, entitlementsForPlan, writeEntitlementCache } from './entitlement/index'
 import { readBudget, writeBudget, getBudgetStatus } from './usage/budget'
@@ -312,6 +313,10 @@ export class EngineImpl implements Engine {
 
   async getRelayStatus(): Promise<RelayStatus> {
     return getRelayDaemonStatus(this.paths.aasHome)
+  }
+
+  async getProviderHealth(): Promise<ProviderHealth[]> {
+    return readProviderHealth(this.paths.aasHome)
   }
 
   async parsePricingFromUrl(_url: string): Promise<Record<string, ModelPricing>> {

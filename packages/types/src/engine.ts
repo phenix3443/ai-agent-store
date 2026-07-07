@@ -135,6 +135,20 @@ export interface RecentRequestRow {
   isFallback: boolean
 }
 
+/** Circuit-breaker health of a provider, derived from real relay request outcomes. */
+export interface ProviderHealth {
+  providerSlug: string
+  /** 'up' = routable; 'cooling' = temporarily skipped until cooldownUntil. */
+  status: 'up' | 'cooling'
+  consecutiveFailures: number
+  /** Epoch ms until which the provider is cooled down, or null when up. */
+  cooldownUntil: number | null
+  /** Classification of the last failure: 'auth' | 'rate_limit' | 'overload' | 'server' | 'network'. */
+  lastErrorKind: string | null
+  lastStatus: number | null
+  lastErrorAt: string | null
+}
+
 /** A registry entry — shape stored in ~/.agents/registry.json and returned by Engine.list() */
 export interface InstalledItem {
   slug: string
@@ -220,6 +234,8 @@ export interface Engine {
   getRecentRequests(options?: { limit?: number }): Promise<RecentRequestRow[]>
   /** Reports whether the local relay daemon process is currently running. */
   getRelayStatus(): Promise<RelayStatus>
+  /** Returns per-provider circuit-breaker health derived from recent relay request outcomes. */
+  getProviderHealth(): Promise<ProviderHealth[]>
   /** Fetches a provider's pricing page and extracts a draft pricing table for user review. Returns mock data in this iteration. */
   parsePricingFromUrl(url: string): Promise<Record<string, ModelPricing>>
   /** Lists all local relay listen-port configurations. */
