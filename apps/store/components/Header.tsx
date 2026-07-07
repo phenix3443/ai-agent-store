@@ -27,6 +27,14 @@ export function Header({ user }: HeaderProps) {
   const isDocs = pathname.startsWith('/docs')
   const isPricing = pathname.startsWith('/pricing')
 
+  // Admins (by GitHub username) see the review-queue link. The /admin page and the
+  // API enforce this too — this only controls link visibility.
+  const adminUsernames = (process.env.NEXT_PUBLIC_ADMIN_GITHUB_USERNAMES ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  const isAdmin = user?.username ? adminUsernames.includes(user.username.toLowerCase()) : false
+
   useEffect(() => {
     if (!menuOpen) return
     function onClick(e: MouseEvent) {
@@ -138,6 +146,15 @@ export function Header({ user }: HeaderProps) {
                 >
                   {t('settings')}
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMenuOpen(false)}
+                    className="block px-3.5 py-2.5 text-[12.5px] text-store-text-2 hover:bg-store-panel-2 hover:text-store-text"
+                  >
+                    审核队列
+                  </Link>
+                )}
                 <a
                   href="/auth/logout"
                   className="block border-t border-store-border px-3.5 py-2.5 text-[12.5px] text-store-red hover:bg-store-panel-2"
