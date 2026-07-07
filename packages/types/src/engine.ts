@@ -236,6 +236,8 @@ export interface Engine {
   getRelayStatus(): Promise<RelayStatus>
   /** Returns per-provider circuit-breaker health derived from recent relay request outcomes. */
   getProviderHealth(): Promise<ProviderHealth[]>
+  /** Manually clears a provider's cooldown so routing can use it again immediately. */
+  resetProviderHealth(providerSlug: string): Promise<void>
   /** Fetches a provider's pricing page and extracts a draft pricing table for user review. Returns mock data in this iteration. */
   parsePricingFromUrl(url: string): Promise<Record<string, ModelPricing>>
   /** Lists all local relay listen-port configurations. */

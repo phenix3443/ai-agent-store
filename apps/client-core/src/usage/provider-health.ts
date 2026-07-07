@@ -110,6 +110,15 @@ export function readProviderHealth(aasHome: string, now: number = Date.now()): P
   })
 }
 
+/** Manually clear a provider's cooldown so routing can use it again immediately. */
+export function resetProviderHealth(aasHome: string, slug: string, now: number = Date.now()): void {
+  const db = openUsageDb(aasHome)
+  db.run(
+    `UPDATE provider_health SET status = 'up', consecutive_failures = 0, cooldown_until = NULL, updated_at = ? WHERE provider_slug = ?`,
+    [new Date(now).toISOString(), slug]
+  )
+}
+
 /** Slugs currently cooling down — used by health-aware routing to skip them. */
 export function getCoolingProviderSlugs(aasHome: string, now: number = Date.now()): Set<string> {
   const db = openUsageDb(aasHome)

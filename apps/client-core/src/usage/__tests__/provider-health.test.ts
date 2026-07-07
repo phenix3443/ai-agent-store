@@ -5,6 +5,7 @@ import {
   recordProviderHealthBatch,
   readProviderHealth,
   getCoolingProviderSlugs,
+  resetProviderHealth,
 } from '../provider-health'
 
 let aasHome: string | undefined
@@ -79,6 +80,20 @@ test('a success clears prior failure state', async () => {
   expect(row.status).toBe('up')
   expect(row.consecutiveFailures).toBe(0)
   expect(row.cooldownUntil).toBeNull()
+})
+
+test('resetProviderHealth clears an active cooldown immediately', async () => {
+  aasHome = await mkdtemp('/tmp/as-health-')
+  const now = 1_000_000
+  recordProviderHealthBatch(aasHome, [{ slug: 'p1', statusCode: 401, latencyMs: 10 }], now)
+  expect(readProviderHealth(aasHome, now)[0].status).toBe('cooling')
+
+  resetProviderHealth(aasHome, 'p1', now)
+  const [row] = readProviderHealth(aasHome, now)
+  expect(row.status).toBe('up')
+  expect(row.consecutiveFailures).toBe(0)
+  expect(row.cooldownUntil).toBeNull()
+  expect(getCoolingProviderSlugs(aasHome, now).size).toBe(0)
 })
 
 test('a batch records each attempt independently per provider', async () => {

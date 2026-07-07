@@ -19,7 +19,7 @@ import { syncItemToCodex, enableRelayForCodex, disableRelayForCodex } from './co
 import { checkUpdates as _checkUpdates, applyUpdate } from './updater/index'
 import { duplicateProviderConnection } from './config/provider'
 import { getDailySummary, getRecentRequests } from './usage/queries'
-import { readProviderHealth } from './usage/provider-health'
+import { readProviderHealth, resetProviderHealth } from './usage/provider-health'
 import { exportUsageToFile } from './usage/export'
 import { resolveEntitlements, entitlementsForPlan, writeEntitlementCache } from './entitlement/index'
 import { readBudget, writeBudget, getBudgetStatus } from './usage/budget'
@@ -317,6 +317,10 @@ export class EngineImpl implements Engine {
 
   async getProviderHealth(): Promise<ProviderHealth[]> {
     return readProviderHealth(this.paths.aasHome)
+  }
+
+  async resetProviderHealth(providerSlug: string): Promise<void> {
+    resetProviderHealth(this.paths.aasHome, providerSlug)
   }
 
   async parsePricingFromUrl(_url: string): Promise<Record<string, ModelPricing>> {

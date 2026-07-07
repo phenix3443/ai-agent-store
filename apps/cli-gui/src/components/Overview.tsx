@@ -8,6 +8,7 @@ import { ProxyLogModal } from './ProxyLogModal'
 import { UsageTrendChart } from './UsageTrendChart'
 import { BudgetCard } from './BudgetCard'
 import { UsageExport } from './UsageExport'
+import { ProviderHealthCard } from './ProviderHealthCard'
 import { ProGate } from './ProGate'
 
 const CATEGORY_CARDS: { category: InstalledItem['category']; label: string }[] = [
@@ -209,6 +210,8 @@ export function Overview() {
               </div>
             </div>
           </button>
+
+          <ProviderHealthCard />
 
           <div className="rounded-xl border border-store-border bg-store-panel p-4">
             <div className="mb-2 flex items-center justify-between">
