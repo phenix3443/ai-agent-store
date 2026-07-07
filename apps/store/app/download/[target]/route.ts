@@ -6,9 +6,13 @@ import { NextResponse } from 'next/server'
 const REPO = 'phenix3443/agent-store'
 const RELEASES_PAGE = `https://github.com/${REPO}/releases/latest`
 
+// The macOS build is a single universal .dmg (Apple Silicon + Intel), so all mac
+// targets resolve to the one dmg; mac-arm/mac-intel stay as aliases for old links.
+const matchMac = (n: string) => n.endsWith('.dmg')
 const MATCHERS: Record<string, (name: string) => boolean> = {
-  'mac-arm': (n) => n.endsWith('_aarch64.dmg'),
-  'mac-intel': (n) => n.endsWith('_x64.dmg'),
+  mac: matchMac,
+  'mac-arm': matchMac,
+  'mac-intel': matchMac,
   win: (n) => n.endsWith('-setup.exe'),
 }
 

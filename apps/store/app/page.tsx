@@ -65,22 +65,13 @@ export default async function LandingPage() {
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <a
-            href="/download/mac-arm"
+            href="/download/mac"
             className="flex h-[50px] items-center gap-2.5 rounded-[13px] bg-white px-6 shadow-[0_8px_30px_rgba(255,255,255,0.12)] hover:brightness-95"
           >
             <svg width="18" height="18" viewBox="0 0 16 16" fill="#111" aria-hidden>
               <path d="M11 1.5c.1.9-.25 1.75-.8 2.35-.55.6-1.4 1.05-2.2.99-.11-.86.3-1.75.82-2.3.57-.63 1.5-1.06 2.18-1.04zM13.4 11.6c-.35.82-.52 1.18-.97 1.9-.63 1-1.52 2.25-2.62 2.26-.98 0-1.23-.64-2.56-.63-1.33 0-1.6.64-2.58.64-1.1 0-1.94-1.12-2.57-2.13C.34 11.2.16 8 1.24 6.36c.76-1.17 1.96-1.85 3.09-1.85 1.15 0 1.87.63 2.82.63.92 0 1.48-.63 2.81-.63 1 0 2.07.55 2.83 1.5-2.49 1.36-2.08 4.92.61 5.19z" />
             </svg>
-            <span className="text-[15px] font-semibold text-[#111]">下载 for Mac · Apple 芯片</span>
-          </a>
-          <a
-            href="/download/mac-intel"
-            className="flex h-[50px] items-center gap-2.5 rounded-[13px] border border-white/[0.16] bg-white/[0.05] px-5 hover:border-white/40 hover:bg-white/[0.09]"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="#e7e7ee" aria-hidden>
-              <path d="M11 1.5c.1.9-.25 1.75-.8 2.35-.55.6-1.4 1.05-2.2.99-.11-.86.3-1.75.82-2.3.57-.63 1.5-1.06 2.18-1.04zM13.4 11.6c-.35.82-.52 1.18-.97 1.9-.63 1-1.52 2.25-2.62 2.26-.98 0-1.23-.64-2.56-.63-1.33 0-1.6.64-2.58.64-1.1 0-1.94-1.12-2.57-2.13C.34 11.2.16 8 1.24 6.36c.76-1.17 1.96-1.85 3.09-1.85 1.15 0 1.87.63 2.82.63.92 0 1.48-.63 2.81-.63 1 0 2.07.55 2.83 1.5-2.49 1.36-2.08 4.92.61 5.19z" />
-            </svg>
-            <span className="text-[15px] font-semibold text-[#e7e7ee]">Mac · Intel</span>
+            <span className="text-[15px] font-semibold text-[#111]">下载 for Mac</span>
           </a>
           <a
             href="/download/win"

@@ -18,9 +18,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - host: macos-latest # Apple Silicon (aarch64)
-          - host: macos-13 # Intel (x86_64)
-          - host: windows-latest # x86_64
+          # One macOS universal build on the always-available arm64 runner covers
+          # both Apple Silicon and Intel — no scarce macos-13 (Intel) runner needed.
+          - host: macos-latest
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            sidecar-targets: aarch64-apple-darwin x86_64-apple-darwin
+            tauri-args: --target universal-apple-darwin
+          - host: windows-latest
+            rust-targets: ''
+            sidecar-targets: ''
+            tauri-args: ''
 
     runs-on: ${{ matrix.host }}
 
@@ -37,6 +44,8 @@ jobs:
       - uses: oven-sh/setup-bun@v2
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
 
       - uses: swatinem/rust-cache@v2
         with:
@@ -51,8 +60,11 @@ jobs:
         run: pnpm exec turbo build --filter=@as/client-core
 
       # Compile the `as` CLI into the sidecar binary Tauri bundles (binaries/as-<triple>).
+      # On macOS this builds both arch slices for the universal bundle.
       - name: Build sidecar
         shell: bash
+        env:
+          SIDECAR_TARGETS: ${{ matrix.sidecar-targets }}
         run: pnpm --filter @as/cli-gui build:sidecar
 
       # Build the web frontend into apps/cli-gui/dist (frontendDist in tauri.conf.json).
@@ -63,14 +75,17 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Pin the toolchain so tauri's universal target detection sees both arch targets.
+          RUSTUP_TOOLCHAIN: stable
         with:
           projectPath: apps/cli-gui
+          args: ${{ matrix.tauri-args }}
           tagName: ${{ github.ref_name }}
           releaseName: 'Agent Store CLI ${{ github.ref_name }}'
           releaseBody: |
             桌面客户端安装包。
 
-            - macOS: `.dmg`（Apple Silicon `aarch64` 与 Intel `x64` 各一份）
+            - macOS: `.dmg`（universal，同时支持 Apple 芯片与 Intel）
             - Windows: `.msi` / `-setup.exe`
 
             当前为**未签名**构建，首次打开会被系统拦截 —— 属正常现象，**并非文件损坏**：
