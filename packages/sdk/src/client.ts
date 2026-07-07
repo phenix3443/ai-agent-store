@@ -10,15 +10,16 @@ export interface GetItemsParams {
   sort?: 'downloads' | 'created'
 }
 
-export interface CreateItemBody {
+export interface SubmitManifest {
   slug: string
   name: string
   description: string
   category: 'provider' | 'skill' | 'mcp'
   version: string
-  compatibleWith?: string[]
-  tags?: string[]
-  metadata?: Record<string, unknown>
+  compatibleWith: string[]
+  tags: string[]
+  installHook: { steps: unknown[] }
+  metadata: Record<string, unknown>
 }
 
 export interface PublisherWithItems {
@@ -113,21 +114,22 @@ export class StoreClient {
     }
   }
 
-  /** Publishes a new item for the authenticated publisher (enters as pending). */
-  async createItem(body: CreateItemBody, options: { token?: string } = {}): Promise<Result<{ success: true }>> {
+  /** Submits a package: opens a PR against the registry and returns the PR url. */
+  async submitPackage(manifest: SubmitManifest, options: { token?: string } = {}): Promise<Result<{ url: string }>> {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (options.token) headers['Authorization'] = `Bearer ${options.token}`
 
-      const res = await this._fetch(`${this.baseUrl}/api/items`, {
+      const res = await this._fetch(`${this.baseUrl}/api/submit`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(body),
+        body: JSON.stringify(manifest),
       })
-      const json = await res.json() as { success?: true; error?: string }
+      const json = await res.json() as { url?: string; error?: string }
 
       if (!res.ok) return { data: null, error: json.error ?? `HTTP ${res.status}` }
-      return { data: { success: true }, error: null }
+      if (!json.url) return { data: null, error: 'No PR url in response' }
+      return { data: { url: json.url }, error: null }
     } catch (err) {
       return { data: null, error: err instanceof Error ? err.message : String(err) }
     }

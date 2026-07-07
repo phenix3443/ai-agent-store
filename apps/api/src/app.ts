@@ -6,7 +6,8 @@ import type { SupabaseEnv } from './supabase'
 import { getWaffoClient, proProductId, checkoutSuccessUrl, type WaffoEnv, type BillingPlan } from './waffo'
 import { subscriptionRecordFromEvent } from './billing'
 import { getAuthUser } from './auth'
-import { getMyItems, createItem, validateCreateItem, type CreateItemInput } from './publisher-items'
+import { getMyItems } from './publisher-items'
+import { submitToRegistry, validateSubmit, type RegistryEnv, type SubmitManifest } from './registry-submit'
 import {
   isWebhookProcessed,
   markWebhookProcessed,
@@ -18,7 +19,7 @@ import {
 // On Cloudflare Workers, secrets arrive as the fetch handler's `env` (Hono c.env).
 // On local Bun (Bun.serve), c.env is the Bun server object with no such keys, so
 // getSupabase()/getWaffoClient() fall back to process.env.
-export const app = new Hono<{ Bindings: SupabaseEnv & WaffoEnv }>()
+export const app = new Hono<{ Bindings: SupabaseEnv & WaffoEnv & RegistryEnv }>()
 
 app.use('/api/*', cors())
 
@@ -72,25 +73,26 @@ app.get('/api/me/items', async (c) => {
   return c.json({ items: data })
 })
 
-// Publish a new item for the authenticated publisher (enters as pending).
-app.post('/api/items', async (c) => {
+// Submit a package: opens a PR against the registry on the user's behalf so the
+// contribution goes through the same validate + review as any other.
+app.post('/api/submit', async (c) => {
   const user = await getAuthUser(c.env, c.req.header('Authorization'))
   if (!user) return c.json({ error: 'Unauthorized' }, 401)
   if (!user.username) return c.json({ error: 'GitHub username not found' }, 422)
 
-  let body: CreateItemInput
+  let manifest: SubmitManifest
   try {
-    body = (await c.req.json()) as CreateItemInput
+    manifest = (await c.req.json()) as SubmitManifest
   } catch {
     return c.json({ error: 'Invalid JSON' }, 400)
   }
 
-  const invalid = validateCreateItem(body)
-  if (invalid) return c.json({ error: invalid.error }, invalid.status as 422)
+  const invalid = validateSubmit(manifest)
+  if (invalid) return c.json({ error: invalid }, 422)
 
-  const result = await createItem(c.env, user.username, body)
-  if ('error' in result) return c.json({ error: result.error }, result.status as 409 | 422 | 500)
-  return c.json({ success: true }, 201)
+  const result = await submitToRegistry(c.env, manifest, { slug: user.username, name: user.username })
+  if ('error' in result) return c.json({ error: result.error }, result.status)
+  return c.json({ url: result.url }, 201)
 })
 
 // ── Billing (Waffo Pancake, Merchant of Record) ──────────────────────────────

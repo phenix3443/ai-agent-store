@@ -18,8 +18,6 @@ test('mcp schema shows url field only when transport is sse or http', () => {
   expect(urlField.when!({ transport: 'stdio' })).toBe(false)
 })
 
-test('skill schema shows installScript only when installMethod is script', () => {
-  const scriptField = FIELD_SCHEMAS.skill.find((f) => f.key === 'installScript')!
-  expect(scriptField.when!({ installMethod: 'script' })).toBe(true)
-  expect(scriptField.when!({ installMethod: 'zip' })).toBe(false)
+test('skill schema collects the raw SKILL.md url', () => {
+  expect(FIELD_SCHEMAS.skill.map((f) => f.key)).toEqual(['name', 'repo', 'contentUrl'])
 })

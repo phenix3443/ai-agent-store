@@ -105,9 +105,9 @@ test('GET /api/me/items returns 401 without a bearer token', async () => {
   expect(res.status).toBe(401)
 })
 
-test('POST /api/items returns 401 without a bearer token', async () => {
+test('POST /api/submit returns 401 without a bearer token', async () => {
   const res = await app.fetch(
-    new Request('http://localhost/api/items', {
+    new Request('http://localhost/api/submit', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ slug: 'x', name: 'X' }),

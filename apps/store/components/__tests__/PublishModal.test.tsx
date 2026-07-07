@@ -41,21 +41,20 @@ test('mcp transport=stdio shows command field, hides url field', () => {
   expect(screen.queryByLabelText('远程地址')).not.toBeInTheDocument()
 })
 
-test('submitting POSTs to the API server and closes the modal on success', async () => {
+test('submitting opens a registry PR and shows the PR link', async () => {
   const originalFetch = globalThis.fetch
   let sentUrl = ''
   globalThis.fetch = (async (url: RequestInfo | URL) => {
     sentUrl = String(url)
-    return new Response(JSON.stringify({ success: true }), { status: 201 })
+    return new Response(JSON.stringify({ url: 'https://github.com/ai-agent-store/registry/pull/1' }), { status: 201 })
   }) as typeof fetch
 
-  const onOpenChange = mock(() => {})
-  renderModal(onOpenChange)
+  renderModal()
   fireEvent.change(screen.getByLabelText('名称'), { target: { value: 'My Provider' } })
   fireEvent.click(screen.getByText('发布'))
 
-  await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
-  expect(sentUrl.endsWith('/api/items')).toBe(true)
+  await waitFor(() => expect(screen.getByText('已提交为 PR 🎉')).toBeInTheDocument())
+  expect(sentUrl.endsWith('/api/submit')).toBe(true)
 
   globalThis.fetch = originalFetch
 })
@@ -65,7 +64,7 @@ test('mcp http submits headers as parsed JSON in the request body', async () => 
   let sentBody: { metadata?: { headers?: Record<string, string> } } | undefined
   globalThis.fetch = (async (_url: RequestInfo | URL, init?: RequestInit) => {
     sentBody = JSON.parse(init?.body as string)
-    return new Response(JSON.stringify({ success: true }), { status: 201 })
+    return new Response(JSON.stringify({ url: 'https://github.com/x/pull/2' }), { status: 201 })
   }) as typeof fetch
 
   renderModal()

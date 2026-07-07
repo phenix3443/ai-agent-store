@@ -20,14 +20,7 @@ export const FIELD_SCHEMAS: Record<PublishType, FieldSchema[]> = {
   skill: [
     { key: 'name', label: '名称', type: 'text' },
     { key: 'repo', label: '仓库地址', type: 'url' },
-    { key: 'category', label: '分类', type: 'select', widget: 'pills', options: ['workflow', 'design', 'documents', 'other'] },
-    { key: 'installMethod', label: '安装方式', type: 'select', options: ['zip', 'script'] },
-    {
-      key: 'installScript',
-      label: '安装脚本',
-      type: 'text',
-      when: (vals) => vals.installMethod === 'script',
-    },
+    { key: 'contentUrl', label: 'SKILL.md 原始链接', type: 'url' },
   ],
   mcp: [
     { key: 'name', label: '名称', type: 'text' },
