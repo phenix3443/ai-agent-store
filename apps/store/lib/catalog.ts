@@ -31,9 +31,26 @@ export async function getItems(options: GetItemsOptions = {}): Promise<Item[]> {
   return items
 }
 
+// Feature the best packages, not just the most-downloaded: weight publisher tier
+// and the review quality score, with (dampened) downloads as a tiebreaker.
+const TIER_WEIGHT: Record<string, number> = { official: 100, verified: 60, community: 0 }
+
+function featuredScore(item: Item): number {
+  return (
+    (TIER_WEIGHT[item.publisher.tier] ?? 0) +
+    (item.review?.quality ?? 0) * 10 +
+    Math.log10((item.downloads ?? 0) + 1) * 5 -
+    (item.review?.risk === 'medium' ? 20 : 0)
+  )
+}
+
 export async function getFeaturedItems(): Promise<Item[]> {
-  const { data } = await client.getItems({ sort: 'downloads', limit: 6 })
-  return data ?? []
+  const { data } = await client.getItems({ sort: 'downloads', limit: 100 })
+  const items = data ?? []
+  return items
+    .slice()
+    .sort((a, b) => featuredScore(b) - featuredScore(a))
+    .slice(0, 6)
 }
 
 export async function getItemBySlug(slug: string): Promise<Item | null> {
