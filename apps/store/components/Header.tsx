@@ -26,6 +26,7 @@ export function Header({ user }: HeaderProps) {
   const isStore = pathname.startsWith('/store')
   const isDocs = pathname.startsWith('/docs')
   const isPricing = pathname.startsWith('/pricing')
+  const isCollections = pathname.startsWith('/collections')
 
   useEffect(() => {
     if (!menuOpen) return
@@ -66,6 +67,9 @@ export function Header({ user }: HeaderProps) {
           </Link>
           <Link href="/docs" className={navItemCls(isDocs)}>
             {t('docs')}
+          </Link>
+          <Link href="/collections" className={navItemCls(isCollections)}>
+            合集
           </Link>
           <Link href="/pricing" className={navItemCls(isPricing)}>
             {t('pricing')}
