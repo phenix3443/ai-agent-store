@@ -15,15 +15,15 @@ const server = new Server(
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
-      name: 'e2e_probe',
-      description: 'Returns the E2E MCP probe token. Call this when asked to run the MCP probe.',
+      name: 'magic_token',
+      description: 'Returns the e2e magic token. Call this when asked to call the magic_token tool.',
       inputSchema: { type: 'object', properties: {} },
     },
   ],
 }))
 
 server.setRequestHandler(CallToolRequestSchema, async (req) => {
-  if (req.params.name === 'e2e_probe') {
+  if (req.params.name === 'magic_token') {
     return { content: [{ type: 'text', text: 'E2E_MCP_OK' }] }
   }
   throw new Error(`Unknown tool: ${req.params.name}`)

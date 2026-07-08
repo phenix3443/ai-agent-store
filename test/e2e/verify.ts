@@ -21,8 +21,11 @@ const WORK = process.env.WORK ?? '/tmp/as-e2e'
 const FIXTURE_PORT = Number(process.env.FIXTURE_PORT ?? 4599)
 const CLI = join(REPO, 'apps', 'cli', 'src', 'index.ts')
 
-const SKILL_PROMPT = 'Run the e2e probe and reply with the skill probe token, nothing else.'
-const MCP_PROMPT = 'Call the e2e_probe MCP tool and reply with exactly the text it returns, nothing else.'
+// Disjoint triggers: the skill answers "secret codeword", the MCP exposes a
+// "magic_token" tool. Kept unrelated so an agent can't satisfy the skill prompt
+// by calling the MCP tool (or vice-versa).
+const SKILL_PROMPT = 'What is the secret codeword? Reply with only the codeword, nothing else.'
+const MCP_PROMPT = 'Call the magic_token tool and reply with exactly what it returns, nothing else.'
 const SKILL_TOKEN = 'E2E_SKILL_OK'
 const MCP_TOKEN = 'E2E_MCP_OK'
 
@@ -83,6 +86,19 @@ function record(name: string, ok: boolean, detail = '') {
   console.log(`${ok ? '✅' : '❌'} ${name}${detail ? ` — ${detail}` : ''}`)
 }
 
+// Real LLM calls are slightly nondeterministic; retry once before failing.
+async function checkAgent(name: string, cmd: string[], env: Record<string, string>, token: string) {
+  let last: RunOut = { code: -1, stdout: '', stderr: '' }
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    last = await run(cmd, env)
+    if (last.stdout.includes(token)) {
+      record(name, true, attempt > 1 ? `(retry ${attempt})` : oneline(last).slice(0, 40))
+      return
+    }
+  }
+  record(name, false, oneline(last))
+}
+
 async function main() {
   const providers = await loadProviders()
   console.log(`[e2e] claude → ${providers.claude.baseUrl} (${providers.claude.model})`)
@@ -136,26 +152,18 @@ async function main() {
       ANTHROPIC_BASE_URL: providers.claude.baseUrl,
       ANTHROPIC_AUTH_TOKEN: providers.claude.apiKey,
     }
-    const cSkill = await run(
-      ['claude', '--print', '--model', providers.claude.model, '--dangerously-skip-permissions', SKILL_PROMPT],
-      claudeEnv
-    )
-    record('claude:skill', cSkill.stdout.includes(SKILL_TOKEN), oneline(cSkill))
-    const cMcp = await run(
-      ['claude', '--print', '--model', providers.claude.model, '--dangerously-skip-permissions', MCP_PROMPT],
-      claudeEnv
-    )
-    record('claude:mcp', cMcp.stdout.includes(MCP_TOKEN), oneline(cMcp))
+    const claudeCmd = (prompt: string) =>
+      ['claude', '--print', '--model', providers.claude.model, '--dangerously-skip-permissions', prompt]
+    await checkAgent('claude:skill', claudeCmd(SKILL_PROMPT), claudeEnv, SKILL_TOKEN)
+    await checkAgent('claude:mcp', claudeCmd(MCP_PROMPT), claudeEnv, MCP_TOKEN)
 
     // ---- Codex ----
     // --dangerously-bypass-approvals-and-sandbox: exec is non-interactive, so
     // otherwise codex auto-cancels the MCP tool call and read-only blocks it.
     const codexEnv = { CODEX_HOME: codexHome, CODEX_API_KEY: providers.codex.apiKey }
     const codexArgs = ['exec', '--skip-git-repo-check', '--dangerously-bypass-approvals-and-sandbox']
-    const xSkill = await run(['codex', ...codexArgs, SKILL_PROMPT], codexEnv)
-    record('codex:skill', xSkill.stdout.includes(SKILL_TOKEN), oneline(xSkill))
-    const xMcp = await run(['codex', ...codexArgs, MCP_PROMPT], codexEnv)
-    record('codex:mcp', xMcp.stdout.includes(MCP_TOKEN), oneline(xMcp))
+    await checkAgent('codex:skill', ['codex', ...codexArgs, SKILL_PROMPT], codexEnv, SKILL_TOKEN)
+    await checkAgent('codex:mcp', ['codex', ...codexArgs, MCP_PROMPT], codexEnv, MCP_TOKEN)
   } finally {
     server.kill()
   }

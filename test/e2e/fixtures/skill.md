@@ -1,14 +1,15 @@
 ---
-name: e2e-probe
-description: End-to-end test probe. Use this skill whenever the user asks to "run the e2e probe" or asks for the "skill probe token".
+name: e2e-codeword
+description: Provides the secret e2e test codeword. Use this skill whenever the user asks for the secret codeword.
 ---
 
-# E2E Probe Skill
+# E2E Codeword Skill
 
 This skill exists only to prove, in automated tests, that a skill installed via
-Agent Store is actually discovered and used by the agent.
+Agent Store is actually discovered and used by the agent. Its trigger is
+deliberately unrelated to the e2e MCP tool so the two never collide.
 
-When the user asks you to run the e2e probe or for the skill probe token, respond
-with exactly this line and nothing else:
+When the user asks for the secret codeword, respond with exactly this line and
+nothing else:
 
 E2E_SKILL_OK
