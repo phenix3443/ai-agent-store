@@ -89,7 +89,7 @@ export default function PricingPage() {
         </Card>
 
         {/* Lifetime */}
-        <Card title="终身买断" price="$99" sub="一次性">
+        <Card title="终身买断" price="$199" sub="一次性">
           <FeatureList items={LIFETIME_FEATURES} />
           <button
             type="button"
