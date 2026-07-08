@@ -16,8 +16,9 @@ const MATCHERS: Record<string, (name: string) => boolean> = {
   win: (n) => n.endsWith('-setup.exe'),
 }
 
-export async function GET(_req: Request, { params }: { params: { target: string } }) {
-  const match = MATCHERS[params.target]
+export async function GET(_req: Request, { params }: { params: Promise<{ target: string }> }) {
+  const { target } = await params
+  const match = MATCHERS[target]
   if (!match) return NextResponse.redirect(RELEASES_PAGE, 302)
 
   try {

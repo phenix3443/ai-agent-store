@@ -64,6 +64,7 @@ export default async function LandingPage() {
           发现并一键安装技能、MCP 与模型供应商。本地代理统一转发、自动降级，全部收进一个可扩展的客户端。
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- route handler that 302s to the GitHub release asset; Link would try client-nav */}
           <a
             href="/download/mac"
             className="flex h-[50px] items-center gap-2.5 rounded-[13px] bg-white px-6 shadow-[0_8px_30px_rgba(255,255,255,0.12)] hover:brightness-95"
@@ -73,6 +74,7 @@ export default async function LandingPage() {
             </svg>
             <span className="text-[15px] font-semibold text-[#111]">下载 for Mac</span>
           </a>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- route handler that 302s to the GitHub release asset; Link would try client-nav */}
           <a
             href="/download/win"
             className="flex h-[50px] items-center gap-2.5 rounded-[13px] border border-white/[0.16] bg-white/[0.05] px-5 hover:border-white/40 hover:bg-white/[0.09]"

@@ -11,7 +11,7 @@ export interface CurrentUser {
 // failure to reach Supabase is treated as "not logged in".
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const {
       data: { user },
     } = await supabase.auth.getUser()

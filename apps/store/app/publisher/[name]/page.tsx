@@ -4,11 +4,12 @@ import { ItemCard } from '@/components/ItemCard'
 import { Badge } from '@/components/Badge'
 
 interface PublisherPageProps {
-  params: { name: string }
+  params: Promise<{ name: string }>
 }
 
 export default async function PublisherPage({ params }: PublisherPageProps) {
-  const result = await getPublisherWithItems(params.name)
+  const { name } = await params
+  const result = await getPublisherWithItems(name)
   if (!result) notFound()
 
   const { publisher, items } = result

@@ -35,7 +35,7 @@ const { ClientStateProvider } = await import('../../../components/ClientStatePro
 
 describe('StorePage', () => {
   test('renders items from the mock catalog', async () => {
-    render(<ClientStateProvider>{await StorePage({ searchParams: {} })}</ClientStateProvider>)
+    render(<ClientStateProvider>{await StorePage({ searchParams: Promise.resolve({}) })}</ClientStateProvider>)
     // An item may appear in both the featured carousel and the grid, so allow >1.
     expect(screen.getAllByText('Superpowers').length).toBeGreaterThan(0)
   })
@@ -43,7 +43,7 @@ describe('StorePage', () => {
   test('filters by category search param', async () => {
     render(
       <ClientStateProvider>
-        {await StorePage({ searchParams: { category: 'mcp' } })}
+        {await StorePage({ searchParams: Promise.resolve({ category: 'mcp' }) })}
       </ClientStateProvider>
     )
     // The category filter drives the grid; both mcp items render.

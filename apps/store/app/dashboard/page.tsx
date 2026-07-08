@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { StoreClient } from '@as/sdk'
 import type { Item, Plan } from '@as/types'
@@ -33,7 +34,7 @@ function StatTile({ label, value, hint }: { label: string; value: string; hint?:
 }
 
 export default async function DashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   const githubUsername = user?.user_metadata['user_name'] as string | undefined
@@ -132,12 +133,12 @@ export default async function DashboardPage() {
       {/* My submissions */}
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium uppercase tracking-wider text-store-text-2">我的提交</h2>
-        <a
+        <Link
           href="/store?publish=1"
           className="rounded-lg bg-store-accent px-4 py-2 text-[12.5px] font-semibold text-white hover:brightness-110"
         >
           发布资源
-        </a>
+        </Link>
       </div>
 
       {items.length > 0 ? (
@@ -201,12 +202,12 @@ export default async function DashboardPage() {
           <p className="max-w-sm text-[12.5px] text-store-text-3">
             发布你的第一个供应商、技能或 MCP，让社区在 Agent Store 中发现并安装它。
           </p>
-          <a
+          <Link
             href="/store?publish=1"
             className="mt-1 rounded-lg bg-store-accent px-4 py-2 text-[12.5px] font-semibold text-white hover:brightness-110"
           >
             发布第一个资源
-          </a>
+          </Link>
         </div>
       )}
     </main>

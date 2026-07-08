@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { StoreClient } from '@as/sdk'
 import { createClient } from '@/lib/supabase/client'
@@ -69,9 +70,9 @@ export default function PricingPage() {
         {/* Free */}
         <Card title="Free" price="$0" sub="永久免费">
           <FeatureList items={FREE_FEATURES} />
-          <a href="/store" className="mt-6 block rounded-lg border border-store-border-strong px-4 py-2.5 text-center text-sm font-semibold text-store-text hover:border-store-accent">
+          <Link href="/store" className="mt-6 block rounded-lg border border-store-border-strong px-4 py-2.5 text-center text-sm font-semibold text-store-text hover:border-store-accent">
             免费开始
-          </a>
+          </Link>
         </Card>
 
         {/* Pro */}

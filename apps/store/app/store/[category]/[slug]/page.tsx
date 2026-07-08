@@ -7,13 +7,14 @@ import { MarkdownContent } from '@/components/MarkdownContent'
 import { CATEGORY_META, CategoryGlyph } from '@/lib/item-meta'
 
 interface ItemDetailPageProps {
-  params: { category: string; slug: string }
+  params: Promise<{ category: string; slug: string }>
 }
 
 const CATEGORY_LABEL: Record<string, string> = { provider: '供应商', skill: '技能', mcp: 'MCP' }
 
 export async function generateMetadata({ params }: ItemDetailPageProps): Promise<Metadata> {
-  const item = await getItemBySlug(params.slug)
+  const { slug } = await params
+  const item = await getItemBySlug(slug)
   if (!item) return { title: 'Not found' }
   const desc = item.description.slice(0, 160)
   return {
@@ -42,9 +43,10 @@ function runInfo(item: Item): { label: string; value: string } | null {
 }
 
 export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
-  const item = await getItemBySlug(params.slug)
+  const { category, slug } = await params
+  const item = await getItemBySlug(slug)
 
-  if (!item || item.category !== params.category) notFound()
+  if (!item || item.category !== category) notFound()
 
   const cat = CATEGORY_META[item.category]
   const review = item.review

@@ -8,29 +8,30 @@ import { ItemGrid } from '@/components/ItemGrid'
 import { PublishModalTrigger } from '@/components/PublishModalTrigger'
 
 interface StorePageProps {
-  searchParams: {
+  searchParams: Promise<{
     category?: string
     q?: string
     sort?: string
     verified?: string
-  }
+  }>
 }
 
 export default async function StorePage({ searchParams }: StorePageProps) {
-  const rawCategory = searchParams.category
+  const sp = await searchParams
+  const rawCategory = sp.category
   const category =
     rawCategory === 'provider' || rawCategory === 'skill' || rawCategory === 'mcp'
       ? rawCategory
       : null
 
   const sort =
-    searchParams.sort === 'created' || searchParams.sort === 'rating'
-      ? searchParams.sort
+    sp.sort === 'created' || sp.sort === 'rating'
+      ? sp.sort
       : 'downloads'
 
-  const verifiedOnly = searchParams.verified === '1'
+  const verifiedOnly = sp.verified === '1'
 
-  const allItems = await getItems({ category, q: searchParams.q, sort })
+  const allItems = await getItems({ category, q: sp.q, sort })
   const items = verifiedOnly
     ? allItems.filter((item) => item.publisher.tier !== 'community')
     : allItems
@@ -46,7 +47,7 @@ export default async function StorePage({ searchParams }: StorePageProps) {
         <div className="flex flex-wrap items-center gap-2.5">
           <CategoryTabs active={category ?? 'all'} />
           <VerifiedToggle active={verifiedOnly} />
-          <SearchInput defaultValue={searchParams.q} />
+          <SearchInput defaultValue={sp.q} />
         </div>
       </div>
 

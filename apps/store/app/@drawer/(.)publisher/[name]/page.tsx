@@ -2,11 +2,12 @@ import { getPublisherWithItems } from '@/lib/catalog'
 import { InterceptedPublisher } from '@/components/InterceptedPublisher'
 
 interface InterceptedPublisherProps {
-  params: { name: string }
+  params: Promise<{ name: string }>
 }
 
 export default async function InterceptedPublisherDrawer({ params }: InterceptedPublisherProps) {
-  const result = await getPublisherWithItems(params.name)
+  const { name } = await params
+  const result = await getPublisherWithItems(name)
 
   if (!result) return null
 
