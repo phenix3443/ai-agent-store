@@ -51,14 +51,31 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
   const risk = review ? (RISK_META[review.risk] ?? RISK_META.medium) : null
   const run = runInfo(item)
 
-  // For skills, show the actual SKILL.md so users see what it does before installing.
-  let skillBody: string | null = null
+  // Rich content so users know what a package does before installing:
+  // skills → their SKILL.md; stdio MCP → the npm package README.
+  let doc: { label: string; body: string } | null = null
   if (item.category === 'skill' && item.contentUrl) {
     try {
       const res = await fetch(item.contentUrl, { next: { revalidate: 3600 } })
-      if (res.ok) skillBody = (await res.text()).slice(0, 20000).replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '').trim()
+      if (res.ok) {
+        const body = (await res.text()).slice(0, 20000).replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '').trim()
+        if (body) doc = { label: '内容', body }
+      }
     } catch {
       /* content unavailable — skip the section */
+    }
+  } else if (item.category === 'mcp' && item.transport === 'stdio' && item.serverCommand) {
+    const pkg = item.serverCommand.split(/\s+/).find((t) => t !== 'npx' && !t.startsWith('-'))
+    if (pkg) {
+      try {
+        const res = await fetch(`https://registry.npmjs.org/${pkg}`, { next: { revalidate: 3600 } })
+        if (res.ok) {
+          const data = (await res.json()) as { readme?: string }
+          if (typeof data.readme === 'string' && data.readme.trim()) doc = { label: 'README', body: data.readme.slice(0, 20000) }
+        }
+      } catch {
+        /* npm unavailable — skip */
+      }
     }
   }
 
@@ -126,10 +143,10 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
           )}
         </div>
 
-        {skillBody && (
+        {doc && (
           <div className="mt-4 rounded-xl border border-store-border bg-store-panel p-5">
-            <p className="mb-3 text-sm font-medium text-store-text">内容</p>
-            <MarkdownContent>{skillBody}</MarkdownContent>
+            <p className="mb-3 text-sm font-medium text-store-text">{doc.label}</p>
+            <MarkdownContent>{doc.body}</MarkdownContent>
           </div>
         )}
       </main>
