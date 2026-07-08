@@ -11,6 +11,15 @@ export interface InstallHook {
   >
 }
 
+/** Automated quality + safety review of a package (from the registry review CI). */
+export interface PackageReview {
+  tier: string
+  quality: number
+  risk: 'low' | 'medium' | 'high' | string
+  summary: string
+  concerns: string[]
+}
+
 export interface BaseItem {
   id: string
   slug: string
@@ -26,6 +35,8 @@ export interface BaseItem {
   rating: number
   status: 'published' | 'pending' | 'rejected'
   installHook: InstallHook
+  /** Automated review verdict, when the registry has reviewed this package. */
+  review?: PackageReview
   createdAt: string
   updatedAt: string
 }

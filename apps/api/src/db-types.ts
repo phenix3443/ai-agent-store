@@ -79,6 +79,7 @@ export function mapItem(row: DBItem & { publishers: DBPublisher }): Item {
     rating: row.rating,
     status: row.status,
     installHook: row.install_hook as InstallHook,
+    review: (row.metadata?.['review'] as import('@as/types').PackageReview | undefined) ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
