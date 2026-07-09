@@ -41,3 +41,6 @@ keys/
 test/provider/
 test/*.txt
 test/*.pem
+
+# Apple / provider secrets (never commit)
+.secrets/
