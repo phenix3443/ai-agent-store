@@ -62,6 +62,59 @@ app.post('/api/items/:slug/install', async (c) => {
   }
 })
 
+// ── User reviews ─────────────────────────────────────────────────────────────
+
+// Public list of an item's reviews (most recent first).
+app.get('/api/items/:slug/reviews', async (c) => {
+  const slug = c.req.param('slug')
+  try {
+    const supabase = getSupabaseAdmin(c.env)
+    const { data } = await supabase
+      .from('reviews')
+      .select('author_name, rating, body, updated_at')
+      .eq('item_slug', slug)
+      .order('updated_at', { ascending: false })
+      .limit(50)
+    return c.json({ reviews: data ?? [] })
+  } catch {
+    return c.json({ error: 'Failed to load reviews' }, 500)
+  }
+})
+
+// Submit (or update) the caller's review, then recompute the item's aggregate
+// rating + review_count. One review per user per item (upsert).
+app.post('/api/items/:slug/reviews', async (c) => {
+  const slug = c.req.param('slug')
+  const user = await getAuthUser(c.env, c.req.header('Authorization'))
+  if (!user) return c.json({ error: 'Unauthorized' }, 401)
+  const body = (await c.req.json().catch(() => ({}))) as { rating?: number; body?: string }
+  const rating = Math.round(Number(body.rating))
+  if (!(rating >= 1 && rating <= 5)) return c.json({ error: 'rating must be an integer 1-5' }, 400)
+  try {
+    const supabase = getSupabaseAdmin(c.env)
+    const { error } = await supabase.from('reviews').upsert(
+      {
+        item_slug: slug,
+        user_id: user.id,
+        author_name: user.username ?? null,
+        rating,
+        body: typeof body.body === 'string' ? body.body.slice(0, 2000) : null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'item_slug,user_id' }
+    )
+    if (error) return c.json({ error: 'Failed to submit review' }, 500)
+    const { data: rows } = await supabase.from('reviews').select('rating').eq('item_slug', slug)
+    const count = rows?.length ?? 0
+    const avg = count > 0 ? rows!.reduce((s, r) => s + (r.rating as number), 0) / count : 0
+    const rounded = Math.round(avg * 10) / 10
+    await supabase.from('items').update({ rating: rounded, review_count: count }).eq('slug', slug)
+    return c.json({ ok: true, rating: rounded, reviewCount: count })
+  } catch {
+    return c.json({ error: 'Failed to submit review' }, 500)
+  }
+})
+
 app.get('/api/publishers/:slug', async (c) => {
   const slug = c.req.param('slug')
   const [publisherResult, itemsResult] = await Promise.all([

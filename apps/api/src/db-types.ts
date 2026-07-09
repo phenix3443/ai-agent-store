@@ -31,6 +31,7 @@ export interface DBItem {
   tags: string[]
   downloads: number
   rating: number
+  review_count: number
   status: 'published' | 'pending' | 'rejected'
   install_hook: { steps: unknown[] }
   metadata: Record<string, unknown>
@@ -77,6 +78,7 @@ export function mapItem(row: DBItem & { publishers: DBPublisher }): Item {
     tags: row.tags,
     downloads: row.downloads,
     rating: row.rating,
+    reviewCount: row.review_count ?? 0,
     status: row.status,
     installHook: row.install_hook as InstallHook,
     review: (row.metadata?.['review'] as import('@as/types').PackageReview | undefined) ?? undefined,

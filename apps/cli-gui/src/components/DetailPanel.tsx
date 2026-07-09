@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Copy, Heart } from 'lucide-react'
-import type { InstalledItem, PackageReview } from '@as/types'
+import type { InstalledItem, PackageReview, UserReview } from '@as/types'
 import { callRpc } from '../lib/rpc'
 import { useAppState } from '../state/AppState'
 import { useTerminalLog } from '../state/TerminalLog'
@@ -32,6 +32,14 @@ export function DetailPanel() {
   const detail = useSelectedDetail()
   const [tab, setTab] = useState<Tab>('overview')
   const [childCount, setChildCount] = useState(0)
+  const [userReviews, setUserReviews] = useState<UserReview[]>([])
+
+  useEffect(() => {
+    if (!detail) return
+    callRpc<UserReview[]>('getReviews', [detail.slug])
+      .then((r) => setUserReviews(r ?? []))
+      .catch(() => setUserReviews([]))
+  }, [detail])
 
   useEffect(() => {
     if (!detail || detail.category !== 'provider' || !detail.installed) {
@@ -234,6 +242,25 @@ export function DetailPanel() {
             ) : (
               <div className="rounded-xl border border-dashed border-store-border bg-store-panel px-4 py-8 text-center text-sm text-store-text-3">
                 暂无自动审查记录
+              </div>
+            )}
+
+            {userReviews.length > 0 && (
+              <div className="mt-2 flex flex-col gap-2">
+                <p className="text-xs font-semibold text-store-text-2">用户评价（{userReviews.length}）</p>
+                {userReviews.map((r, i) => (
+                  <div key={i} className="rounded-xl border border-store-border bg-store-panel px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-store-text">{r.authorName ?? '匿名'}</span>
+                      <span className="text-[11px] text-store-amber">{'★'.repeat(r.rating)}</span>
+                      <span className="ml-auto text-[10.5px] text-store-text-3">
+                        {new Date(r.updatedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {r.body && <p className="mt-1.5 text-xs leading-relaxed text-store-text-2">{r.body}</p>}
+                  </div>
+                ))}
+                <p className="text-[11px] text-store-text-3">在网页版商店可发表评价</p>
               </div>
             )}
           </div>

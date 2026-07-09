@@ -4,6 +4,7 @@ import type { Item } from '@as/types'
 import { getItemBySlug } from '@/lib/catalog'
 import { Badge } from '@/components/Badge'
 import { MarkdownContent } from '@/components/MarkdownContent'
+import { ReviewsSection } from '@/components/ReviewsSection'
 import { CATEGORY_META, CategoryGlyph } from '@/lib/item-meta'
 
 interface ItemDetailPageProps {
@@ -151,6 +152,8 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
             <MarkdownContent>{doc.body}</MarkdownContent>
           </div>
         )}
+
+        <ReviewsSection slug={item.slug} rating={item.rating} reviewCount={item.reviewCount ?? 0} />
       </main>
     </div>
   )

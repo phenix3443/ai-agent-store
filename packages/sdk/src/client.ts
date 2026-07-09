@@ -1,4 +1,4 @@
-import type { Item, Publisher, Plan } from '@as/types'
+import type { Item, Publisher, Plan, UserReview } from '@as/types'
 
 export type Result<T> = { data: T; error: null } | { data: null; error: string }
 
@@ -91,6 +91,48 @@ export class StoreClient {
       await this._fetch(`${this.baseUrl}/api/items/${encodeURIComponent(slug)}/install`, { method: 'POST' })
     } catch {
       /* install counting is non-critical */
+    }
+  }
+
+  /** Public list of an item's user reviews (most recent first). */
+  async getReviews(slug: string): Promise<Result<UserReview[]>> {
+    try {
+      const res = await this._fetch(`${this.baseUrl}/api/items/${encodeURIComponent(slug)}/reviews`)
+      const json = (await res.json()) as {
+        reviews?: { author_name: string | null; rating: number; body: string | null; updated_at: string }[]
+        error?: string
+      }
+      if (!res.ok) return { data: null, error: json.error ?? `HTTP ${res.status}` }
+      const reviews = (json.reviews ?? []).map((r) => ({
+        authorName: r.author_name,
+        rating: r.rating,
+        body: r.body,
+        updatedAt: r.updated_at,
+      }))
+      return { data: reviews, error: null }
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : String(err) }
+    }
+  }
+
+  /** Submit or update the authenticated user's review for an item. */
+  async submitReview(
+    slug: string,
+    token: string,
+    rating: number,
+    body?: string
+  ): Promise<Result<{ rating: number; reviewCount: number }>> {
+    try {
+      const res = await this._fetch(`${this.baseUrl}/api/items/${encodeURIComponent(slug)}/reviews`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ rating, body }),
+      })
+      const json = (await res.json()) as { rating?: number; reviewCount?: number; error?: string }
+      if (!res.ok) return { data: null, error: json.error ?? `HTTP ${res.status}` }
+      return { data: { rating: json.rating ?? 0, reviewCount: json.reviewCount ?? 0 }, error: null }
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : String(err) }
     }
   }
 

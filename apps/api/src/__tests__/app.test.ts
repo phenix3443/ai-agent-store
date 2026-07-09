@@ -100,6 +100,17 @@ test('GET /api/me/entitlements returns 401 without a bearer token', async () => 
   expect(res.status).toBe(401)
 })
 
+test('POST /api/items/:slug/reviews returns 401 without a token', async () => {
+  const res = await app.fetch(
+    new Request('http://localhost/api/items/some-slug/reviews', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ rating: 5 }),
+    })
+  )
+  expect(res.status).toBe(401)
+})
+
 test('GET /api/me/items returns 401 without a bearer token', async () => {
   const res = await app.fetch(new Request('http://localhost/api/me/items'))
   expect(res.status).toBe(401)

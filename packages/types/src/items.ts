@@ -11,6 +11,14 @@ export interface InstallHook {
   >
 }
 
+/** A user-submitted review of a package (distinct from the automated PackageReview). */
+export interface UserReview {
+  authorName: string | null
+  rating: number
+  body: string | null
+  updatedAt: string
+}
+
 /** Automated quality + safety review of a package (from the registry review CI). */
 export interface PackageReview {
   tier: string
@@ -31,8 +39,10 @@ export interface BaseItem {
   compatibleWith: ToolTarget[]
   tags: string[]
   downloads: number
-  /** Always 0 in MVP — rating system deferred */
+  /** Average user rating (1-5), 0 when there are no reviews yet. */
   rating: number
+  /** Number of user reviews. Absent on items built outside the API. */
+  reviewCount?: number
   status: 'published' | 'pending' | 'rejected'
   installHook: InstallHook
   /** Automated review verdict, when the registry has reviewed this package. */
