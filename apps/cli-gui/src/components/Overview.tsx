@@ -211,7 +211,13 @@ export function Overview() {
             </div>
           </button>
 
-          <ProviderHealthCard />
+          <ProGate
+            feature="smartRouting"
+            title="智能路由"
+            description="多上游自动故障转移，主动避开正在冷却/限流的供应商，健康恢复后自动切回。Free 版为最多两路的基础降级。"
+          >
+            <ProviderHealthCard />
+          </ProGate>
 
           <div className="rounded-xl border border-store-border bg-store-panel p-4">
             <div className="mb-2 flex items-center justify-between">

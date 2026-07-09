@@ -4,8 +4,13 @@ import { findOrderedProvidersForTarget } from './provider-order'
 import { forwardWithFailover } from './forward'
 import { recordUsageAsync } from '../usage/record-usage'
 import { recordProviderHealthBatch, getCoolingProviderSlugs, type ProviderAttempt } from '../usage/provider-health'
+import { resolveEntitlements } from '../entitlement/index'
 
 export const RELAY_PORT = 18780
+
+// Free plan: basic reactive failover across up to two upstreams. Pro's smart
+// routing lifts this cap and adds proactive health-aware avoidance.
+const FREE_MAX_UPSTREAMS = 2
 
 export interface RelayServerOptions {
   aasHome: string
@@ -36,11 +41,20 @@ export function startRelayServer(options: RelayServerOptions): { stop: () => voi
         return Response.json({ error: `no active provider for ${target}` }, { status: 503 })
       }
 
-      // Skip providers currently cooling down. If every eligible provider is cooling,
-      // try them all anyway (half-open) rather than hard-failing the request.
-      const cooling = getCoolingProviderSlugs(aasHome)
-      const routable = eligible.filter(({ item }) => !cooling.has(item.slug))
-      const active = routable.length > 0 ? routable : eligible
+      // Smart routing (Pro): proactively skip providers currently cooling down and
+      // fail over across every configured upstream. If all are cooling, try them
+      // anyway (half-open) rather than hard-failing.
+      // Free: basic reactive failover across up to FREE_MAX_UPSTREAMS, in order —
+      // no proactive avoidance (a cooling provider is just tried and failed over).
+      const { smartRouting } = await resolveEntitlements(aasHome)
+      let active: typeof eligible
+      if (smartRouting) {
+        const cooling = getCoolingProviderSlugs(aasHome)
+        const avoided = eligible.filter(({ item }) => !cooling.has(item.slug))
+        active = avoided.length > 0 ? avoided : eligible
+      } else {
+        active = eligible.slice(0, FREE_MAX_UPSTREAMS)
+      }
 
       const body = await req.json().catch(() => ({}))
       const requestedModel = typeof (body as Record<string, unknown>)['model'] === 'string'

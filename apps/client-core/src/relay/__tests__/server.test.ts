@@ -5,6 +5,7 @@ import { startRelayServer } from '../server'
 import { writeRegistry } from '../../registry/index'
 import { itemDir } from '../../paths'
 import { recordProviderHealthBatch } from '../../usage/provider-health'
+import { writeEntitlementCache } from '../../entitlement/index'
 import type { InstalledItem } from '@as/types'
 
 // Drive a provider into the cooling-down state (2 consecutive server failures).
@@ -222,6 +223,7 @@ test('skips a provider that is cooling down and routes to the next healthy one',
     { slug: 'healthy', enabledFor: { claude: true }, config: { apiKey: 'k2', baseUrl: 'https://healthy.example.com', level: 2 } },
   ])
   coolDown(aasHome, 'cooling')
+  await writeEntitlementCache(aasHome, 'pro') // proactive cooling-skip is Pro smart routing
 
   const calls: string[] = []
   const fetchImpl = (async (url: string) => {
@@ -243,6 +245,7 @@ test('when every provider is cooling, still tries them (half-open) instead of fa
     { slug: 'only', enabledFor: { claude: true }, config: { apiKey: 'k1', baseUrl: 'https://only.example.com', level: 1 } },
   ])
   coolDown(aasHome, 'only')
+  await writeEntitlementCache(aasHome, 'pro') // proactive cooling-skip is Pro smart routing
 
   const calls: string[] = []
   const fetchImpl = (async (url: string) => {
@@ -301,5 +304,80 @@ test('falls back to the next provider when the first one whitelist-rejects the m
   })
 
   expect(calls).toEqual(['https://any-model.example.com/responses'])
+  expect(res.status).toBe(200)
+})
+
+// ── Smart routing: free vs Pro split ─────────────────────────────────────────
+
+test('free plan does not proactively skip a cooling provider (reactive failover)', async () => {
+  await installProviders([
+    { slug: 'cooling', enabledFor: { claude: true }, config: { apiKey: 'k1', baseUrl: 'https://cooling.example.com', level: 1 } },
+    { slug: 'healthy', enabledFor: { claude: true }, config: { apiKey: 'k2', baseUrl: 'https://healthy.example.com', level: 2 } },
+  ])
+  coolDown(aasHome, 'cooling')
+  // No entitlement cache written → free plan.
+
+  const calls: string[] = []
+  const fetchImpl = (async (url: string) => {
+    calls.push(url)
+    return new Response('{}', { status: 200 })
+  }) as typeof fetch
+
+  const server = startRelayServer({ aasHome, port: 0, fetchImpl })
+  stop = server.stop
+
+  await fetch(`http://127.0.0.1:${server.port}/v1/messages`, { method: 'POST', body: JSON.stringify({ model: 'claude-3-5-sonnet' }) })
+
+  // Free doesn't avoid the cooling provider — it's dialed first and (here) succeeds.
+  expect(calls).toEqual(['https://cooling.example.com/v1/messages'])
+})
+
+test('free plan caps failover at two upstreams; a third is never tried', async () => {
+  await installProviders([
+    { slug: 'p1', enabledFor: { claude: true }, config: { apiKey: 'k1', baseUrl: 'https://p1.example.com', level: 1 } },
+    { slug: 'p2', enabledFor: { claude: true }, config: { apiKey: 'k2', baseUrl: 'https://p2.example.com', level: 2 } },
+    { slug: 'p3', enabledFor: { claude: true }, config: { apiKey: 'k3', baseUrl: 'https://p3.example.com', level: 3 } },
+  ])
+  // free: only the first two are candidates, so both 5xx exhausts failover.
+
+  const calls: string[] = []
+  const fetchImpl = (async (url: string) => {
+    calls.push(url)
+    return new Response('boom', { status: 502 })
+  }) as typeof fetch
+
+  const server = startRelayServer({ aasHome, port: 0, fetchImpl })
+  stop = server.stop
+
+  await fetch(`http://127.0.0.1:${server.port}/v1/messages`, { method: 'POST', body: JSON.stringify({ model: 'claude-3-5-sonnet' }) })
+
+  expect(calls).toEqual(['https://p1.example.com/v1/messages', 'https://p2.example.com/v1/messages'])
+})
+
+test('Pro plan fails over across every upstream beyond the free cap', async () => {
+  await installProviders([
+    { slug: 'p1', enabledFor: { claude: true }, config: { apiKey: 'k1', baseUrl: 'https://p1.example.com', level: 1 } },
+    { slug: 'p2', enabledFor: { claude: true }, config: { apiKey: 'k2', baseUrl: 'https://p2.example.com', level: 2 } },
+    { slug: 'p3', enabledFor: { claude: true }, config: { apiKey: 'k3', baseUrl: 'https://p3.example.com', level: 3 } },
+  ])
+  await writeEntitlementCache(aasHome, 'pro')
+
+  const calls: string[] = []
+  const fetchImpl = (async (url: string) => {
+    calls.push(url)
+    if (url.startsWith('https://p3')) return new Response('{}', { status: 200 })
+    return new Response('boom', { status: 502 })
+  }) as typeof fetch
+
+  const server = startRelayServer({ aasHome, port: 0, fetchImpl })
+  stop = server.stop
+
+  const res = await fetch(`http://127.0.0.1:${server.port}/v1/messages`, { method: 'POST', body: JSON.stringify({ model: 'claude-3-5-sonnet' }) })
+
+  expect(calls).toEqual([
+    'https://p1.example.com/v1/messages',
+    'https://p2.example.com/v1/messages',
+    'https://p3.example.com/v1/messages',
+  ])
   expect(res.status).toBe(200)
 })
