@@ -21,7 +21,6 @@ const RPC_METHODS: Record<string, RpcHandler> = {
   getRelayStatus: (e) => e.getRelayStatus(),
   getProviderHealth: (e) => e.getProviderHealth(),
   resetProviderHealth: (e, a) => e.resetProviderHealth(a[0] as string),
-  parsePricingFromUrl: (e, a) => e.parsePricingFromUrl(a[0] as string),
   listLocalConfigs: (e) => e.listLocalConfigs(),
   addLocalConfig: (e, a) => e.addLocalConfig(a[0] as string),
   removeLocalConfig: (e, a) => e.removeLocalConfig(a[0] as string),

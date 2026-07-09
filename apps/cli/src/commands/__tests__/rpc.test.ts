@@ -20,7 +20,6 @@ function makeEngine(overrides?: Partial<Engine>): Engine {
     },
     duplicateProvider: async () => ({ newSlug: 'openai-provider-copy' }),
     getUsageSummary: async () => [],
-    parsePricingFromUrl: async () => ({}),
     listLocalConfigs: async () => [],
     addLocalConfig: async () => ({ id: 'x', name: 'x', port: 18780, enabled: true, enabledFor: { claude: true, codex: true } }),
     removeLocalConfig: async () => undefined,

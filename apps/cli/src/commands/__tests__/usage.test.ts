@@ -11,7 +11,6 @@ function makeEngine(rows: UsageSummaryRow[]): Engine {
     list: async () => [], info: async () => { throw new Error('not installed') },
     duplicateProvider: async () => ({ newSlug: '' }),
     getUsageSummary: async () => rows,
-    parsePricingFromUrl: async () => ({}),
   } as unknown as Engine
 }
 

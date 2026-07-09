@@ -3,7 +3,7 @@ import { join } from 'path'
 import type {
   Engine, Paths, InstallResult, SyncResult, UpdateAvailable, UpdateResult,
   ListOptions, InstalledItem, ItemDetail, ToolTarget, SearchOptions, Item, JsonSchema,
-  UsageSummaryRow, UsageSummaryOptions, ModelPricing, RegistryJson, LocalRelayConfig,
+  UsageSummaryRow, UsageSummaryOptions, RegistryJson, LocalRelayConfig,
   RecentRequestRow, RelayStatus, ProviderHealth, Entitlements, BudgetConfig, BudgetStatus,
 } from '@as/types'
 import { StoreClient } from '@as/sdk'
@@ -323,12 +323,6 @@ export class EngineImpl implements Engine {
 
   async resetProviderHealth(providerSlug: string): Promise<void> {
     resetProviderHealth(this.paths.aasHome, providerSlug)
-  }
-
-  async parsePricingFromUrl(_url: string): Promise<Record<string, ModelPricing>> {
-    return {
-      'example-model': { input: 1, output: 5 },
-    }
   }
 
   async listLocalConfigs(): Promise<LocalRelayConfig[]> {

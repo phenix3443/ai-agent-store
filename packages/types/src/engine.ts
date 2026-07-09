@@ -244,8 +244,6 @@ export interface Engine {
   getProviderHealth(): Promise<ProviderHealth[]>
   /** Manually clears a provider's cooldown so routing can use it again immediately. */
   resetProviderHealth(providerSlug: string): Promise<void>
-  /** Fetches a provider's pricing page and extracts a draft pricing table for user review. Returns mock data in this iteration. */
-  parsePricingFromUrl(url: string): Promise<Record<string, ModelPricing>>
   /** Lists all local relay listen-port configurations. */
   listLocalConfigs(): Promise<LocalRelayConfig[]>
   /** Adds a new local relay configuration on the next free port, enabled by default. */

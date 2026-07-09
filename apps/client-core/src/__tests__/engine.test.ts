@@ -554,14 +554,6 @@ test('getRecentRequests returns rows from the usage database', async () => {
   expect(rows[0]!.providerSlug).toBe('provider-a')
 })
 
-test('parsePricingFromUrl: returns a non-empty mock pricing table', async () => {
-  const pricing = await engine.parsePricingFromUrl('https://example.com/pricing')
-  expect(Object.keys(pricing).length).toBeGreaterThan(0)
-  for (const entry of Object.values(pricing)) {
-    expect(typeof entry.input).toBe('number')
-    expect(typeof entry.output).toBe('number')
-  }
-})
 
 test('listLocalConfigs returns the seeded default when nothing is configured', async () => {
   const configs = await engine.listLocalConfigs()
