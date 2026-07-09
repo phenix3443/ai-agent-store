@@ -3,6 +3,7 @@ import { TrendingUp, RadioTower } from 'lucide-react'
 import type { InstalledItem, LocalRelayConfig, RecentRequestRow, RelayStatus, UpdateAvailable, UsageSummaryRow } from '@as/types'
 import { callRpc } from '../lib/rpc'
 import { useAppState } from '../state/AppState'
+import { useT } from '../i18n'
 import { CategoryIcon } from './CategoryIcon'
 import { ProxyLogModal } from './ProxyLogModal'
 import { UsageTrendChart } from './UsageTrendChart'
@@ -11,14 +12,11 @@ import { UsageExport } from './UsageExport'
 import { ProviderHealthCard } from './ProviderHealthCard'
 import { ProGate } from './ProGate'
 
-const CATEGORY_CARDS: { category: InstalledItem['category']; label: string }[] = [
-  { category: 'provider', label: '供应商' },
-  { category: 'skill', label: '技能' },
-  { category: 'mcp', label: 'MCP' },
-]
+const CATEGORY_CARDS: InstalledItem['category'][] = ['provider', 'skill', 'mcp']
 
 export function Overview() {
   const { setNavView, setCategoryFilter, setSelectedSlug } = useAppState()
+  const t = useT()
   const [installed, setInstalled] = useState<InstalledItem[]>([])
   const [today, setToday] = useState<UsageSummaryRow[]>([])
   const [last7Days, setLast7Days] = useState<UsageSummaryRow[]>([])
@@ -93,16 +91,16 @@ export function Overview() {
               <TrendingUp size={16} />
             </div>
             <div>
-              <p className="text-sm font-medium text-store-text">消耗趋势</p>
-              <p className="text-xs text-store-text-2">用量数据统计</p>
+              <p className="text-sm font-medium text-store-text">{t('overview.trend')}</p>
+              <p className="text-xs text-store-text-2">{t('overview.trendSub')}</p>
             </div>
           </div>
           <div className="flex gap-1 rounded-lg border border-store-border bg-store-panel-2 p-1 text-xs">
             {(
               [
-                { key: 'today', label: '今日' },
-                { key: 'last7Days', label: '近 7 天' },
-                { key: 'last30Days', label: '近 30 天' },
+                { key: 'today', label: t('overview.today') },
+                { key: 'last7Days', label: t('overview.last7') },
+                { key: 'last30Days', label: t('overview.last30') },
               ] as const
             ).map((p) => (
               <button
@@ -121,19 +119,19 @@ export function Overview() {
 
         <div className="mt-3 grid grid-cols-4 gap-3 border-t border-store-border pt-3 text-xs">
           <div className="rounded-lg bg-store-accent-soft p-3">
-            <p className="text-store-text-2">总费用</p>
+            <p className="text-store-text-2">{t('overview.totalCost')}</p>
             <p className="mt-1 text-base font-semibold text-store-text">${summarize(activePeriodRows()).costUsd.toFixed(4)}</p>
           </div>
           <div className="rounded-lg bg-store-panel-2 p-3">
-            <p className="text-store-text-2">总 Tokens</p>
+            <p className="text-store-text-2">{t('overview.totalTokens')}</p>
             <p className="mt-1 text-base font-semibold text-store-text">{summarize(activePeriodRows()).tokens}</p>
           </div>
           <div className="rounded-lg bg-store-green-soft p-3">
-            <p className="text-store-text-2">总请求数</p>
+            <p className="text-store-text-2">{t('overview.totalRequests')}</p>
             <p className="mt-1 text-base font-semibold text-store-text">{summarize(activePeriodRows()).requestCount}</p>
           </div>
           <div className="rounded-lg bg-store-purple-soft p-3">
-            <p className="text-store-text-2">模型分布</p>
+            <p className="text-store-text-2">{t('overview.modelCount')}</p>
             <p className="mt-1 text-base font-semibold text-store-text">{summarize(activePeriodRows()).modelCount}</p>
           </div>
         </div>
@@ -141,8 +139,8 @@ export function Overview() {
 
       <ProGate
         feature="advancedUsageAnalytics"
-        title="预算与超支告警"
-        description="设置月度消费预算，实时追踪本月花费、月末预测与超支提醒，并可导出账单。"
+        title={t('pro.budget.title')}
+        description={t('pro.budget.desc')}
       >
         <div className="flex flex-col gap-3">
           <BudgetCard />
@@ -151,7 +149,7 @@ export function Overview() {
       </ProGate>
 
       <div className="grid grid-cols-3 gap-3">
-        {CATEGORY_CARDS.map(({ category, label }) => (
+        {CATEGORY_CARDS.map((category) => (
           <button
             key={category}
             type="button"
@@ -159,7 +157,7 @@ export function Overview() {
             className="flex items-center gap-3 rounded-xl border border-store-border bg-store-panel p-4 text-left hover:border-store-border-strong"
           >
             <CategoryIcon category={category} />
-            <span className="flex-1 text-xs font-medium text-store-text-2">{label}</span>
+            <span className="flex-1 text-xs font-medium text-store-text-2">{t(`categories.${category}`)}</span>
             <span className="text-2xl font-semibold text-store-text">
               {installed.filter((i) => i.category === category).length}
             </span>
@@ -190,22 +188,22 @@ export function Overview() {
               </div>
               <span className={`flex items-center gap-1.5 text-xs font-semibold ${relayStatus.running ? 'text-store-green' : 'text-store-text-3'}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${relayStatus.running ? 'bg-store-green' : 'bg-store-text-3'}`} />
-                {relayStatus.running ? '运行中' : '已停止'}
+                {relayStatus.running ? t('overview.running') : t('overview.stopped')}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-3 text-xs text-store-text-2">
               <div>
-                <p>监听地址</p>
+                <p>{t('overview.listenAddr')}</p>
                 <p className="mt-1 font-mono text-sm font-semibold text-store-accent">
                   127.0.0.1{localConfigs[0] ? `:${localConfigs[0].port}` : ''}
                 </p>
               </div>
               <div>
-                <p>今日请求</p>
+                <p>{t('overview.todayRequests')}</p>
                 <p className="mt-1 text-sm font-semibold text-store-text">{summarize(today).requestCount}</p>
               </div>
               <div>
-                <p>成功率</p>
+                <p>{t('overview.successRate')}</p>
                 <p className="mt-1 text-sm font-semibold text-store-green">{successRateLabel(summarize(today))}</p>
               </div>
             </div>
@@ -213,17 +211,17 @@ export function Overview() {
 
           <ProGate
             feature="smartRouting"
-            title="智能路由"
-            description="多上游自动故障转移，主动避开正在冷却/限流的供应商，健康恢复后自动切回。Free 版为最多两路的基础降级。"
+            title={t('pro.smartRouting.title')}
+            description={t('pro.smartRouting.desc')}
           >
             <ProviderHealthCard />
           </ProGate>
 
           <div className="rounded-xl border border-store-border bg-store-panel p-4">
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-sm font-medium text-store-text">最近请求</p>
+              <p className="text-sm font-medium text-store-text">{t('overview.recentRequests')}</p>
               <button type="button" onClick={() => setLogModalOpen(true)} className="text-xs text-store-accent hover:opacity-80">
-                查看全部
+                {t('overview.viewAll')}
               </button>
             </div>
             <div className="flex flex-col gap-1">
@@ -234,7 +232,7 @@ export function Overview() {
                     <span className="font-medium text-store-text">{row.target === 'claude' ? 'Claude Code' : 'Codex'}</span>
                     <span className="font-mono text-store-text-2">
                       {row.model} → {row.providerSlug}
-                      {row.isFallback ? '（降级）' : ''}
+                      {row.isFallback ? t('overview.fallback') : ''}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-store-text-3">
@@ -250,7 +248,7 @@ export function Overview() {
         <div className="rounded-xl border border-store-border bg-store-panel p-4">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-store-text">可更新</p>
+              <p className="text-sm font-medium text-store-text">{t('overview.updatesAvailable')}</p>
               {updates.length > 0 && (
                 <span className="rounded-full bg-store-amber-soft px-1.5 py-0.5 text-[10px] font-medium text-store-amber">
                   {updates.length}
@@ -258,7 +256,7 @@ export function Overview() {
               )}
             </div>
             <button type="button" onClick={() => goToCategory('provider')} className="text-xs font-medium text-store-accent hover:underline">
-              全部
+              {t('overview.all')}
             </button>
           </div>
           {updates.length > 0 && (
@@ -281,7 +279,7 @@ export function Overview() {
                       onClick={() => updateOne(item.slug)}
                       className="rounded-md bg-store-accent px-2 py-1 text-xs font-medium text-white hover:opacity-90"
                     >
-                      更新
+                      {t('overview.update')}
                     </button>
                   </div>
                 )
