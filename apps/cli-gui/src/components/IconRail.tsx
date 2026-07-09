@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAppState, type CategoryFilter } from '../state/AppState'
+import { useT } from '../i18n'
 import { SettingsModal } from './SettingsModal'
 
 function OverviewIcon() {
@@ -42,10 +43,10 @@ function McpIcon() {
   )
 }
 
-const CATEGORY_ICONS: { value: Exclude<CategoryFilter, 'all'>; label: string; icon: () => ReactNode }[] = [
-  { value: 'provider', label: '供应商', icon: ProviderIcon },
-  { value: 'skill', label: '技能', icon: SkillIcon },
-  { value: 'mcp', label: 'MCP', icon: McpIcon },
+const CATEGORY_ICONS: { value: Exclude<CategoryFilter, 'all'>; icon: () => ReactNode }[] = [
+  { value: 'provider', icon: ProviderIcon },
+  { value: 'skill', icon: SkillIcon },
+  { value: 'mcp', icon: McpIcon },
 ]
 
 function RailButton({
@@ -81,6 +82,7 @@ function RailButton({
 
 export function IconRail() {
   const { navView, setNavView, categoryFilter, setCategoryFilter } = useAppState()
+  const t = useT()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   function goToOverview() {
@@ -94,17 +96,17 @@ export function IconRail() {
 
   return (
     <aside className="flex w-[58px] shrink-0 flex-col items-center gap-2 border-r border-store-border bg-store-sidebar py-4">
-      <RailButton active={navView === 'overview'} label="概览" onClick={goToOverview}>
+      <RailButton active={navView === 'overview'} label={t('nav.overview')} onClick={goToOverview}>
         <OverviewIcon />
       </RailButton>
 
       <div className="my-2 h-px w-8 bg-store-border" />
 
-      {CATEGORY_ICONS.map(({ value, label, icon: Icon }) => (
+      {CATEGORY_ICONS.map(({ value, icon: Icon }) => (
         <RailButton
           key={value}
           active={navView === 'browse' && categoryFilter === value}
-          label={label}
+          label={t(`categories.${value}`)}
           onClick={() => goToCategory(value)}
         >
           <Icon />
@@ -113,7 +115,7 @@ export function IconRail() {
 
       <button
         type="button"
-        aria-label="设置"
+        aria-label={t('nav.settings')}
         onClick={() => setSettingsOpen(true)}
         className="mt-auto flex h-9 w-9 items-center justify-center rounded-full text-white"
         style={{ background: 'linear-gradient(135deg, #7c82ff, #b06ad9)' }}

@@ -78,7 +78,7 @@ test('switching to the general tab shows theme, default app, and language rows',
   renderModal()
   fireEvent.click(await screen.findByText('通用'))
   expect(screen.getByText('主题')).toBeInTheDocument()
-  expect(screen.getByText('当前：暗色模式')).toBeInTheDocument()
+  expect(screen.getByText('当前：暗色')).toBeInTheDocument()
   expect(screen.getByText('默认目标应用')).toBeInTheDocument()
   expect(screen.getByText('界面语言')).toBeInTheDocument()
 })
@@ -87,16 +87,18 @@ test('theme toggle switches the displayed label', async () => {
   renderModal()
   fireEvent.click(await screen.findByText('通用'))
   fireEvent.click(screen.getByText('主题').closest('button')!)
-  expect(screen.getByText('当前：亮色模式')).toBeInTheDocument()
+  expect(screen.getByText('当前：亮色')).toBeInTheDocument()
 })
 
-test('language dropdown lists options with the active one checked and disabled ones inert', async () => {
+test('language dropdown lists all five locales, none disabled', async () => {
   renderModal()
   fireEvent.click(await screen.findByText('通用'))
-  fireEvent.click(screen.getByText('简体中文'))
+  fireEvent.click(screen.getByText('中文')) // the dropdown trigger shows the active locale
   expect(screen.getByText('English')).toBeInTheDocument()
-  expect(screen.getAllByText('即将支持').length).toBe(3)
-  expect(screen.getByText('日本語').closest('button')).toBeDisabled()
+  expect(screen.getByText('日本語')).toBeInTheDocument()
+  expect(screen.getByText('한국어')).toBeInTheDocument()
+  expect(screen.getByText('Español')).toBeInTheDocument()
+  expect(screen.getByText('日本語').closest('button')).not.toBeDisabled()
 })
 
 test('switching to the about tab shows app name, version, and links', async () => {

@@ -1,9 +1,12 @@
+import { useT } from '../i18n'
+
 async function getWindow() {
   const { getCurrentWindow } = await import('@tauri-apps/api/window')
   return getCurrentWindow()
 }
 
 export function TitleBar() {
+  const t = useT()
   return (
     <div
       data-tauri-drag-region
@@ -13,21 +16,21 @@ export function TitleBar() {
       <div className="flex gap-2">
         <button
           type="button"
-          aria-label="关闭"
+          aria-label={t('window.close')}
           onClick={() => void getWindow().then((w) => w.close())}
           className="h-3 w-3 rounded-full"
           style={{ background: '#ff5f57' }}
         />
         <button
           type="button"
-          aria-label="最小化"
+          aria-label={t('window.minimize')}
           onClick={() => void getWindow().then((w) => w.minimize())}
           className="h-3 w-3 rounded-full"
           style={{ background: '#febc2e' }}
         />
         <button
           type="button"
-          aria-label="最大化"
+          aria-label={t('window.maximize')}
           onClick={() => void getWindow().then((w) => w.toggleMaximize())}
           className="h-3 w-3 rounded-full"
           style={{ background: '#28c840' }}
