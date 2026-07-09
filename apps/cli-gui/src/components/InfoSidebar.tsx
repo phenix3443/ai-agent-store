@@ -1,6 +1,5 @@
 import { ExternalLink } from 'lucide-react'
 import type { SelectedDetail } from '../lib/useSelectedDetail'
-import { TYPE_META } from '../lib/detailContent'
 import { openExternal } from '../lib/openExternal'
 import { useT, type TFn } from '../i18n'
 
@@ -48,7 +47,7 @@ function formatDate(value?: string): string {
 export function InfoSidebar({ detail }: { detail: SelectedDetail }) {
   const t = useT()
   const createdAt = 'createdAt' in detail ? detail.createdAt : undefined
-  const categories = [TYPE_META[detail.category].label, ...detail.tags.slice(0, 3)]
+  const categories = [t(`categories.${detail.category}`), ...detail.tags.slice(0, 3)]
 
   return (
     <aside className="flex w-[248px] shrink-0 flex-col gap-6 overflow-y-auto border-l border-store-border bg-store-sidebar p-4">

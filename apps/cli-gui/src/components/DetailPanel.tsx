@@ -85,7 +85,7 @@ export function DetailPanel() {
   const type = TYPE_META[detail.category]
   const tier = TIER_META[detail.publisher.tier] ?? TIER_META.community
   const status = STATUS_META[statusOf(detail)]
-  const readme = buildReadme(detail, detail.description)
+  const readme = buildReadme(detail, detail.description, t)
   const review: PackageReview | undefined = 'review' in detail ? detail.review : undefined
 
   return (
@@ -98,13 +98,13 @@ export function DetailPanel() {
               <h2 className="font-mono text-xl font-bold text-store-text">{detail.name}</h2>
               {detail.publisher.tier !== 'community' && (
                 <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${tier.textClass} ${tier.bgClass}`}>
-                  {tier.label}
+                  {t(`tier.${detail.publisher.tier}`)}
                 </span>
               )}
               <span
                 className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${status.textClass} ${status.borderClass}`}
               >
-                {status.label}
+                {t(`status.${statusOf(detail)}`)}
               </span>
             </div>
             <div className="mt-1.5 flex items-center gap-3 text-xs text-store-text-2">
@@ -112,7 +112,7 @@ export function DetailPanel() {
               <span className="text-store-border-strong">|</span>
               <span className="text-store-text-3">↓ {detail.downloads}</span>
               {review && <span className="text-store-amber">{t('detail.quality')} {review.quality}/5</span>}
-              <span className={`font-semibold ${type.textClass}`}>{type.label}</span>
+              <span className={`font-semibold ${type.textClass}`}>{t(`categories.${detail.category}`)}</span>
             </div>
             <p className="mt-3 max-w-[620px] text-sm leading-relaxed text-store-text-2">{detail.description}</p>
             <div className="mt-4 flex items-center gap-2">
@@ -168,14 +168,14 @@ export function DetailPanel() {
               { key: 'reviews', label: t('detail.tabReview') },
               { key: 'versions', label: t('detail.tabVersion') },
             ] as const
-          ).map((t) => (
+          ).map((opt) => (
             <button
-              key={t.key}
+              key={opt.key}
               type="button"
-              onClick={() => setTab(t.key)}
-              className={`pb-2.5 font-semibold ${tab === t.key ? 'border-b-2 border-store-accent text-store-text' : 'text-store-text-3'}`}
+              onClick={() => setTab(opt.key)}
+              className={`pb-2.5 font-semibold ${tab === opt.key ? 'border-b-2 border-store-accent text-store-text' : 'text-store-text-3'}`}
             >
-              {t.label}
+              {opt.label}
             </button>
           ))}
         </div>
