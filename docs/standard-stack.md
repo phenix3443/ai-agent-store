@@ -9,7 +9,7 @@
 |---|---|---|
 | 计算 | **Cloudflare Workers** + **Hono** | 已在用；一个账号无限 Worker，按量、边际成本≈0 |
 | 数据库 | **Neon**（serverless Postgres） | 免费档 ~100 项目 + scale-to-zero（不像 Supabase 2 项目/7 天暂停）→ test 免费；prod 上付费档换常驻+备份。**test/prod 同引擎** |
-| 认证 | **Better Auth**（每产品各自实例，共享配置包） | 自托管、$0、用户存自己库、不按 MAU 收费；跨产品无耦合 |
+| 认证 | **Neon Auth**（Neon 托管的 Better Auth） | 一键开、$0 到 60K MAU、用户**直接同步进你的 Neon 库**、每项目各自隔离；底层是 Better Auth，脱离 Neon 可自托管同一个库 |
 | 数据访问 | **Drizzle ORM** | 类型安全 + 迁移工具（drizzle-kit）；不锁厂商；边缘友好 |
 | 对象存储 | **Cloudflare R2**（按需） | 同账号、零 egress |
 | 支付 | **Waffo Pancake**（MoR） | 已接；见 agent-store |
@@ -30,15 +30,17 @@
 
 要点：**同一个 Postgres 引擎贯穿三套环境**，schema/查询/迁移完全一致，杜绝"test 一套 prod 另一套"的行为分叉。
 
-## 3. 认证：Model 2（每产品独立 + 共享模板）
+## 3. 认证：Neon Auth（托管 Better Auth）+ Model 2
 
-- 每个产品跑**自己的 Better Auth 实例**，用户表在**该产品自己的 Neon 库**里 → 产品间用户/数据完全隔离，无共享依赖、无单点故障。
-- 只建**一次** auth 配置包（如 `packages/auth`）：封装 session 策略、GitHub/Google social provider、Drizzle adapter、cookie/JWT 约定。新产品 `import` 后只填**该产品的 DB 连接 + OAuth app 凭据**，分钟级接好，不重写。
+- **首选 Neon Auth**：建 Neon 项目时一键开启。它**底层就是 Better Auth**，但由 Neon 托管，用户/session **直接同步进该产品的 Neon 库**（可与业务表 JOIN）。免费档含到 60K MAU、付费档含到 1M MAU → 现阶段实质 $0。
+- **每产品一套（Model 2）**：每个产品各自的 Neon 项目开各自的 Neon Auth → 用户/数据天然隔离，产品间无耦合、无单点故障。
+- **社交登录**：GitHub/Google 等在 Neon Auth 侧配置（每产品各自的 OAuth app）。
 - **消费方**：
-  - Web（Next.js）：Better Auth 的 Next handler 挂在 `/api/auth/*`；客户端用 `authClient` 取 session。
-  - 桌面/CLI（Tauri）：系统浏览器走 OAuth → 深链 `<app>://auth-callback` 带回 session；本地存 token，之后作为 Bearer 调 API。
-  - API（Worker）：用 Better Auth 的 session/JWT 校验替代原来的第三方 `getUser`。
-- **演进口子**：需要跨产品单点登录时，把某产品的 Better Auth 升级成中央 **OIDC Provider**，其它产品当客户端接入。Model 2 → 中央 SSO 平滑，反向很痛，所以默认从 Model 2 起步。
+  - Web（Next.js）：用 Neon Auth 的 SDK/组件取 session。
+  - 桌面/CLI（Tauri）：系统浏览器走 OAuth → 深链 `<app>://auth-callback` 带回 session；本地存 token，之后作为 Bearer 调 API。（此流程需实测，见迁移文档 Phase 2 spike。）
+  - API（Worker）：校验 Neon Auth 的 session 替代原来的第三方 `getUser`。
+- **可移植退路**：Neon Auth 把 auth 绑在 Neon 上；因我们已把 Neon 定为标准 DB，这个耦合可接受。万一某产品将来不放 Neon，因底层是 Better Auth，可在别处**自托管同一个 Better Auth**，配置/心智通用。
+- **演进到 SSO**：需要跨产品单点登录时，再把某产品的 Better Auth 升级成中央 **OIDC Provider**，其它产品接入。Model 2 → 中央 SSO 平滑，反向很痛，故默认从 Model 2 起步。
 
 ## 4. 数据访问与授权
 
@@ -52,8 +54,8 @@
 - 线上：`wrangler secret put <KEY> --env test|production`。禁止把密钥写进 `wrangler.toml`。
 - 标准 env 键：
   - `DATABASE_URL`（Neon 连接串，含 pooler）
-  - `BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`
-  - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`（每产品各自的 OAuth app）
+  - Neon Auth 的项目级 keys（建项目时 Neon 生成：project id + publishable client key + secret server key）
+  - GitHub OAuth app 凭据（在 Neon Auth 侧配社交登录，每产品各自）
   - 产品相关（如 Waffo 的 `WAFFO_*`）
 - 前端构建期：`NEXT_PUBLIC_API_URL` 按环境注入（dev=`http://127.0.0.1:8787`，test/prod=对应 Worker）。
 
@@ -67,13 +69,13 @@
 
 1. `clone` agent-store starter（迁移完成后即成模板）。
 2. Neon：建 **test 免费项目** + **prod 付费项目**；把连接串设成 `<app>-test` / `<app>-prod` 的 secret。
-3. Better Auth：新建该产品的 GitHub OAuth app，填 `GITHUB_CLIENT_*` + `BETTER_AUTH_*`；`packages/auth` 直接复用。
+3. Neon Auth：建 Neon 项目时开启 Neon Auth，配该产品的 GitHub OAuth app，拿到 Neon Auth 项目级 keys 设成 secret。
 4. Drizzle：改 schema，`drizzle-kit push` 到 test/prod。
 5. 前端 `NEXT_PUBLIC_API_URL` 指向对应 Worker。
 6. 建分支开 PR，e2e 绿后 merge、部署。
 
 ## 8. 成本速览
 
-- **test/dev**：Neon 免费 + Workers 免费额度 + Better Auth 自托管 = **$0**。
-- **prod（每产品）**：Neon 付费档（约 $19/月起，常驻+备份）+ Workers 按量 + R2 按需。auth 无额外月费。
+- **test/dev**：Neon 免费（含 Neon Auth 到 60K MAU）+ Workers 免费额度 = **$0**。
+- **prod（每产品）**：Neon 付费档（用量计费，无月费地板）+ Workers 按量 + R2 按需。Neon Auth 含到 1M MAU，无额外月费。
 - 产品越多，靠"每产品一个 Neon 项目 + scale-to-zero"把闲置成本压到接近 0；真到规模再谈单产品的付费档。

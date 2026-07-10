@@ -42,7 +42,7 @@
 | 现在 | 迁移后 |
 |---|---|
 | Supabase Postgres | **Neon**（test 免费 / prod 付费，同引擎） |
-| Supabase Auth（GitHub OAuth，JWT） | **Better Auth**（跑在 API Worker，GitHub social provider） |
+| Supabase Auth（GitHub OAuth，JWT） | **Neon Auth**（Neon 托管的 Better Auth，用户同步进 Neon 库，GitHub social） |
 | `supabase-js` 查询 | **Drizzle** |
 | RLS（`auth.uid()`）做授权 | **API 层做授权**（Worker 是唯一 DB 客户端） |
 | 三端 Supabase session | 三端 Better Auth session（Web handler / 桌面深链） |
@@ -67,11 +67,11 @@
 - 授权逻辑从 RLS 上移到 API handler。
 - **验收**：目录浏览/安装、订阅落库、评价读写、版本历史全部经 Neon；e2e 绿。回滚 = 切回 supabase-js。
 
-### Phase 2 — Auth 换 Better Auth（大头）
-- 在 API Worker 起 Better Auth（Drizzle adapter → Neon 的用户表；GitHub social provider）。
-- API `getAuthUser` → 校验 Better Auth session。
-- Store：`/auth/*` 路由与 `middleware`、各组件取 token 改用 Better Auth。
-- 桌面端：先 spike 验证深链回流，再改 `Auth.tsx` + `deepLink`；`agent-store://auth-callback` 复用。
+### Phase 2 — Auth 换 Neon Auth（大头）
+- 开启 **Neon Auth**（底层 Better Auth，用户/session 同步进 Neon）；在 Neon Auth 侧配 GitHub OAuth app。
+- API `getAuthUser` → 校验 Neon Auth session。
+- Store：`/auth/*` 路由与 `middleware`、各组件取 token 改用 Neon Auth SDK。
+- 桌面端：**先 spike 验证** Neon Auth 的浏览器 OAuth → `agent-store://auth-callback` 深链回流是否可行（单独 PR，不与其它改动混），再改 `Auth.tsx` + `deepLink`。
 - **验收**：三端 GitHub 登录、entitlement 读取、发评价全通；e2e 绿。回滚 = 保留 Supabase Auth 路径于 flag 后。
 
 ### Phase 3 — 切换与清理
@@ -88,7 +88,7 @@
 ## 6. 配置/密钥变更
 
 移除：`SUPABASE_URL`、`SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`、`NEXT_PUBLIC_SUPABASE_*`。
-新增：`DATABASE_URL`（Neon）、`BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`、`GITHUB_CLIENT_ID`、`GITHUB_CLIENT_SECRET`。
+新增：`DATABASE_URL`（Neon）、Neon Auth 项目级 keys（project id + publishable + secret server key）、GitHub OAuth app 凭据。
 新增模板：`apps/api/.dev.vars.example`、补 `apps/store/.env.local.example` 的 `NEXT_PUBLIC_API_URL`。
 
 ## 7. 风险与待验证
