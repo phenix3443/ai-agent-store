@@ -58,7 +58,7 @@
 > 原则：**test 先一直挂在现有 Supabase 上**，逐块把 Neon/Better Auth 等价物做绿再切；每阶段一个 PR，回滚 = revert 该 PR。
 
 ### Phase 0 — Neon + Drizzle schema（零行为变更）
-- 建 Neon **test（免费）** + **prod（付费）** 项目。
+- 建 Neon **test 项目 `agent-store-test`**（开 Neon Auth）；prod 项目命名为 **`agent-store`**（无后缀），押后到 Phase 3 再建。
 - 用 Drizzle 重写 schema（对齐 5 个 migration 的表），`drizzle-kit` 迁移到 Neon。
 - 暂不接线到运行代码，纯并行准备。**验收**：Neon 两库 schema 与 Supabase 一致。
 
