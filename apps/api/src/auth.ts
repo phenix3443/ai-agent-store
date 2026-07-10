@@ -1,5 +1,6 @@
 import { getSupabase, type SupabaseEnv } from './supabase'
-import { verifyNeonAuthToken, type NeonAuthEnv } from './neon-auth'
+import { verifyNeonAuthToken, neonAuthUsername, type NeonAuthEnv } from './neon-auth'
+import type { DbEnv } from './db/client'
 
 export interface AuthUser {
   id: string
@@ -18,17 +19,20 @@ export interface AuthUser {
  * or it is invalid — callers map that to 401. Never throws.
  */
 export async function getAuthUser(
-  env: (SupabaseEnv & NeonAuthEnv) | undefined,
+  env: (SupabaseEnv & NeonAuthEnv & DbEnv) | undefined,
   authHeader: string | undefined | null
 ): Promise<AuthUser | null> {
   const token = authHeader?.replace(/^Bearer\s+/i, '').trim()
   if (!token) return null
 
-  // Neon Auth (only when configured). The GitHub username is not carried in the
-  // Better Auth JWT, so `username` is left undefined here until the publisher
-  // mapping lands in a later Phase 2 step.
+  // Neon Auth (only when configured). The GitHub username is not a Better Auth
+  // JWT claim, so resolve it from the user's linked github account (numeric id →
+  // login), which maps to their publisher profile.
   const neonUser = await verifyNeonAuthToken(env, token)
-  if (neonUser) return { id: neonUser.id, email: neonUser.email }
+  if (neonUser) {
+    const username = await neonAuthUsername(env, neonUser.id)
+    return { id: neonUser.id, email: neonUser.email, username }
+  }
 
   try {
     const supabase = getSupabase(env)

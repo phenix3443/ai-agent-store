@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { SignJWT, exportJWK, generateKeyPair, createLocalJWKSet, type JWTVerifyGetKey } from 'jose'
-import { verifyNeonAuthToken } from '../neon-auth'
+import { verifyNeonAuthToken, githubLoginById } from '../neon-auth'
 
 // Neon Auth (Better Auth) signs session JWTs with EdDSA/Ed25519 (verified against
 // the live agent-store-test JWKS). Reproduce that offline: a local Ed25519 key +
@@ -60,4 +60,30 @@ test('returns null when Neon Auth is not configured (no JWKS)', async () => {
 
 test('returns null for a missing token', async () => {
   expect(await verifyNeonAuthToken(env, undefined, jwks)).toBeNull()
+})
+
+// ── githubLoginById: numeric GitHub id → login (for publisher mapping) ─────────
+
+function fakeFetch(status: number, body: unknown): typeof fetch {
+  return (async () =>
+    ({ ok: status >= 200 && status < 300, status, json: async () => body }) as Response) as unknown as typeof fetch
+}
+
+test('githubLoginById returns the login for a valid id', async () => {
+  expect(await githubLoginById('45416', fakeFetch(200, { login: 'obra', id: 45416 }))).toBe('obra')
+})
+
+test('githubLoginById returns undefined on a non-OK response', async () => {
+  expect(await githubLoginById('999999999', fakeFetch(404, { message: 'Not Found' }))).toBeUndefined()
+})
+
+test('githubLoginById returns undefined when login is absent', async () => {
+  expect(await githubLoginById('1', fakeFetch(200, { id: 1 }))).toBeUndefined()
+})
+
+test('githubLoginById swallows fetch errors', async () => {
+  const throwing = (async () => {
+    throw new Error('network')
+  }) as unknown as typeof fetch
+  expect(await githubLoginById('1', throwing)).toBeUndefined()
 })
