@@ -5,6 +5,24 @@
 
 ---
 
+## 分支 → 环境（CI/CD）
+
+推送到分支即部署对应环境，由 GitHub Actions 完成（`e2e` 通过后触发
+`deploy-api` / `deploy-store`，仅当 `apps/api` / `apps/store` / `packages` / lockfile
+变更时才部署）：
+
+| 分支 | wrangler env | API worker | Neon 库 | Store worker | 域名 |
+|---|---|---|---|---|---|
+| `dev` | `test` | `as-api-test` | `agent-store-test`（late-sea） | `agent-store-web-test` | `test.agent-store.panghuli.tech` |
+| `main` | `production` | `as-api-prod` | `agent-store`（jolly-breeze） | `agent-store-web` | `agent-store.panghuli.tech` |
+
+- Store 的 `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_SITE_URL` 在 CI 构建时按分支注入（客户端 bundle 烘焙）；
+  服务端 `API_URL` 走 `apps/store/wrangler.jsonc` 的 `env.<test|production>.vars`。
+- 每个 env 的 Worker secret（`DATABASE_URL` / `NEON_AUTH_JWKS_URL` / `WAFFO_*`）一次性用
+  `wrangler secret put <NAME> --env <test|production>` 注入，不入库、不由 CI 管理。
+
+---
+
 ## A. 本地开发环境（已就绪，一条命令起）
 
 前提：Docker 运行中；已有 `apps/store/.env.local`（本地 Supabase 的 URL + anon key，`supabase status` 可查）。
@@ -95,5 +113,21 @@ wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env test
 
 流程：CI（`tauri-action`）构建安装包 → 上传到 **Cloudflare R2**（公开桶或自定义域，零出口流量）→ 把上面两个 env 设到 Vercel（Production/Preview scope）指向 R2 的安装包 URL。Tauri 自动更新的 manifest + 二进制也放 R2。
 
-## C. 线上生产环境（后续完善）
-独立 `agent-store-prod` Supabase 项目（无 seed、真实数据、谨慎迁移）；`wrangler deploy --env production`；Vercel Production；自定义域 + Cloudflare 代理；CI/CD（GitHub Actions）；桌面端分发（Releases + R2 镜像 + Tauri updater + 签名）。
+## C. 线上生产环境（核心已上线 ✅）
+
+`main` 分支即生产，CI 自动部署（见顶部「分支 → 环境」表）。已就绪：
+
+- **API** `as-api-prod`（Cloudflare Workers）：https://as-api-prod.phenix3443.workers.dev
+  - 数据层 Neon `agent-store`（jolly-breeze，us-east-1），已 `drizzle-kit migrate` 建表。
+  - Neon Auth 已 provision（JWKS 已注入 Worker secret），trusted origin 含
+    `https://agent-store.panghuli.tech`。
+  - 目录数据：从 `supabase/seed.sql` 的真实爬取目录导入，去掉纯本地测试的 `local` provider。
+- **Store** `agent-store-web`（OpenNext on Workers）：https://agent-store.panghuli.tech → prod API。
+- **Waffo（MoR 支付）**：当前复用 testnet 商户/产品密钥作为过渡；真实生产收款需 KYB 通过后
+  换正式密钥（`wrangler secret put WAFFO_* --env production`）。
+
+### 尚待完善
+- **prod OAuth 应用**：prod Neon Auth 目前仅 shared Google；GitHub / 正式 Google 登录需在
+  各自控制台新建 OAuth App（回调指向 `agent-store.panghuli.tech`）后
+  `configure_neon_auth` 接入（浏览器操作，需你来做一次）。
+- 桌面端分发（Releases + R2 镜像 + Tauri updater + 签名）。

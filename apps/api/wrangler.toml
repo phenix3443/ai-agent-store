@@ -6,6 +6,9 @@
 # Deploy:  wrangler deploy --env test        (→ as-api-test.<subdomain>.workers.dev)
 #          wrangler deploy --env production   (→ as-api-prod.<subdomain>.workers.dev)
 
+# Top-level name groups the sibling environments in the dashboard. CI always
+# deploys with `--env test|production`, so this bare name is never the target.
+name = "as-api"
 main = "src/worker.ts"
 compatibility_date = "2026-07-01"
 compatibility_flags = ["nodejs_compat"]
