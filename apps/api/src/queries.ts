@@ -3,13 +3,14 @@ import { and, arrayContains, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
 import { getDb, type DbEnv } from './db/client'
 import { items, publishers } from './db/schema'
 import { mapItem, mapPublisher } from './db-types'
+import { recommendedScoreSql } from './scoring'
 
 export interface GetItemsOptions {
   category?: 'provider' | 'skill' | 'mcp' | null
   q?: string
   limit?: number
   offset?: number
-  sort?: 'downloads' | 'created'
+  sort?: 'recommended' | 'downloads' | 'created'
 }
 
 // Each query takes the runtime env (Cloudflare Workers `c.env`, or undefined on
@@ -19,7 +20,7 @@ export async function getItems(
   env: DbEnv | undefined,
   options: GetItemsOptions
 ): Promise<{ data: Item[]; error: string | null }> {
-  const { category, q, limit = 20, offset = 0, sort = 'downloads' } = options
+  const { category, q, limit = 20, offset = 0, sort = 'recommended' } = options
   try {
     const db = getDb(env)
     const filters: SQL[] = [eq(items.status, 'published')]
@@ -32,12 +33,21 @@ export async function getItems(
       )
     }
 
+    // 'recommended' (default) ranks by the weighted score in SQL so the LIMIT
+    // keeps the top-scored items; 'downloads'/'created' preserve the old orders.
+    const orderBy =
+      sort === 'created'
+        ? desc(items.createdAt)
+        : sort === 'downloads'
+          ? desc(items.downloads)
+          : desc(recommendedScoreSql())
+
     const rows = await db
       .select()
       .from(items)
       .innerJoin(publishers, eq(items.publisherId, publishers.id))
       .where(and(...filters))
-      .orderBy(desc(sort === 'created' ? items.createdAt : items.downloads))
+      .orderBy(orderBy)
       .limit(limit)
       .offset(offset)
 
