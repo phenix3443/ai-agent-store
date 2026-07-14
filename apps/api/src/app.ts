@@ -32,12 +32,17 @@ app.get('/api/items', async (c) => {
   const category =
     rawCategory === 'provider' || rawCategory === 'skill' || rawCategory === 'mcp' ? rawCategory : null
 
+  // Default to the weighted "recommended" ranking; ?sort=downloads / ?sort=created
+  // remain explicitly available.
+  const rawSort = c.req.query('sort')
+  const sort = rawSort === 'downloads' || rawSort === 'created' ? rawSort : 'recommended'
+
   const { data, error } = await getItems(c.env, {
     category,
     q: c.req.query('q') ?? undefined,
     limit: Math.min(Number(c.req.query('limit') ?? '20'), 100),
     offset: Number(c.req.query('offset') ?? '0'),
-    sort: c.req.query('sort') === 'created' ? 'created' : 'downloads',
+    sort,
   })
 
   if (error) return c.json({ error: 'Failed to fetch items' }, 500)

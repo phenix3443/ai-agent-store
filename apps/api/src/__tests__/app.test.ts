@@ -13,8 +13,13 @@ const mockItem: Item = {
 }
 const mockPublisher: Publisher = mockItem.publisher
 
+let lastGetItemsOptions: { sort?: string } | null = null
+
 mock.module('../queries', () => ({
-  getItems: async () => ({ data: [mockItem], error: null }),
+  getItems: async (_env: unknown, options: { sort?: string }) => {
+    lastGetItemsOptions = options
+    return { data: [mockItem], error: null }
+  },
   getItemBySlug: async (_env: unknown, slug: string) =>
     slug === 'openai-provider' ? { data: mockItem, error: null } : { data: null, error: null },
   getPublisherBySlug: async (_env: unknown, slug: string) =>
@@ -36,6 +41,23 @@ test('GET /api/items returns { items }', async () => {
   const body = (await res.json()) as { items: Item[] }
   expect(body.items).toHaveLength(1)
   expect(body.items[0].slug).toBe('openai-provider')
+})
+
+test('GET /api/items defaults to the recommended sort', async () => {
+  await app.fetch(new Request('http://localhost/api/items'))
+  expect(lastGetItemsOptions?.sort).toBe('recommended')
+})
+
+test('GET /api/items passes through explicit ?sort=downloads and ?sort=created', async () => {
+  await app.fetch(new Request('http://localhost/api/items?sort=downloads'))
+  expect(lastGetItemsOptions?.sort).toBe('downloads')
+  await app.fetch(new Request('http://localhost/api/items?sort=created'))
+  expect(lastGetItemsOptions?.sort).toBe('created')
+})
+
+test('GET /api/items falls back to recommended for an unknown sort', async () => {
+  await app.fetch(new Request('http://localhost/api/items?sort=bogus'))
+  expect(lastGetItemsOptions?.sort).toBe('recommended')
 })
 
 test('GET /api/items sets CORS header', async () => {

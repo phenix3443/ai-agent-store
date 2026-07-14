@@ -55,10 +55,23 @@ export function filterInstalledByListFilter(
   return items
 }
 
+// The built-in `local` relay is the user's very first setup step — it needs no
+// API key and is the entry point everything else builds on — so it's pinned to
+// the top of every recommended view, regardless of filter or score. Returns the
+// input untouched when `local` is absent or already first (never mutates it).
+function pinLocalFirst(items: Item[]): Item[] {
+  const idx = items.findIndex((i) => i.slug === 'local')
+  if (idx <= 0) return items
+  const local = items[idx]
+  return [local, ...items.slice(0, idx), ...items.slice(idx + 1)]
+}
+
 export function filterRecommendedByListFilter(items: Item[], filter: ListFilter): Item[] {
-  if (filter === 'popular') return [...items].sort((a, b) => b.downloads - a.downloads)
+  if (filter === 'popular') return pinLocalFirst([...items].sort((a, b) => b.downloads - a.downloads))
   if (filter === 'recent') {
-    return [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return pinLocalFirst(
+      [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    )
   }
-  return items
+  return pinLocalFirst(items)
 }
