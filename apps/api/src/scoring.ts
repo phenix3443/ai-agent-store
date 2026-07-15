@@ -49,12 +49,19 @@ const TIER_DEFAULT = 0.3
 // Drizzle SQL expression for the recommendation score, used in ORDER BY so the
 // top-N is picked in the database (getItems LIMITs, so ranking must be in SQL).
 // rating is numeric and review_count is int — Postgres handles the arithmetic.
+//
+// Every constant is cast `::numeric`: the Neon HTTP driver sends interpolated
+// values as bound parameters, which arrive at Postgres as untyped `unknown`.
+// Multiplying two of them (`RATING_PRIOR_COUNT * RATING_PRIOR_MEAN`, or
+// `WEIGHT_TIER * CASE(...)` whose all-param branches also type as unknown) then
+// fails to plan ("operator is not unique: unknown * unknown"). The casts pin the
+// type so the whole ORDER BY resolves.
 export function recommendedScoreSql(): SQL<number> {
   return sql<number>`(
-    ${WEIGHT_POPULARITY} * (ln(${items.downloads} + 1) / ln(${DOWNLOADS_MAX} + 1))
-    + ${WEIGHT_RATING_BAYES} * ((${items.reviewCount} * ${items.rating} + ${RATING_PRIOR_COUNT} * ${RATING_PRIOR_MEAN}) / (${items.reviewCount} + ${RATING_PRIOR_COUNT}) / ${RATING_MAX})
-    + ${WEIGHT_FRESHNESS} * power(0.5, extract(epoch from (now() - ${items.updatedAt})) / ${FRESHNESS_HALF_LIFE_SECONDS})
-    + ${WEIGHT_TIER} * (CASE ${publishers.tier} WHEN 'official' THEN ${TIER_WEIGHTS.official} WHEN 'verified' THEN ${TIER_WEIGHTS.verified} ELSE ${TIER_DEFAULT} END)
+    ${WEIGHT_POPULARITY}::numeric * (ln(${items.downloads} + 1) / ln(${DOWNLOADS_MAX}::numeric + 1))
+    + ${WEIGHT_RATING_BAYES}::numeric * ((${items.reviewCount} * ${items.rating} + ${RATING_PRIOR_COUNT}::numeric * ${RATING_PRIOR_MEAN}::numeric) / (${items.reviewCount} + ${RATING_PRIOR_COUNT}::numeric) / ${RATING_MAX}::numeric)
+    + ${WEIGHT_FRESHNESS}::numeric * power(0.5, extract(epoch from (now() - ${items.updatedAt})) / ${FRESHNESS_HALF_LIFE_SECONDS}::numeric)
+    + ${WEIGHT_TIER}::numeric * (CASE ${publishers.tier} WHEN 'official' THEN ${TIER_WEIGHTS.official}::numeric WHEN 'verified' THEN ${TIER_WEIGHTS.verified}::numeric ELSE ${TIER_DEFAULT}::numeric END)
   )`
 }
 
