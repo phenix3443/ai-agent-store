@@ -14,15 +14,15 @@ This work does not invent the operator's legal identity, governing law, business
 - Publish matching Chinese and English Privacy Policy content.
 - Keep the existing narrow, document-focused page layout.
 - Add a compact language control that shows one language at a time and applies the correct `lang` attribute to the visible document.
-- Use semantic headings, sections, lists, and working `mailto:support@panghuli.tech` contact links.
+- Use semantic headings, sections, lists, and working `mailto:agent-store@panghuli.tech` contact links.
 
 The Terms must accurately describe the current Free, monthly, yearly, and lifetime products; USD pricing; tax-included checkout; optional 14-day trial; automatic renewal; cancellation timing; third-party checkout; account and service termination; and the current support-based cancellation/refund request path. Waffo is described conditionally as the intended payment provider while production merchant activation remains pending.
 
-The Privacy Policy must disclose the actual authentication, account, review, billing, analytics, infrastructure, and local usage data found in the repository. It must name Neon, Cloudflare, Vercel, GitHub, Google, and Waffo, distinguish local data from cloud data, disclose the Neon `us-east-1` region and potential international processing, remove the unimplemented cross-device-sync claim, and describe account/data-rights requests as a verified manual support process rather than a self-service feature.
+The Privacy Policy must disclose the actual authentication, account, review, billing, analytics, infrastructure, and local usage data found in the repository. It must name Neon, Cloudflare, Vercel, GitHub, Google, and Waffo, distinguish local data from cloud data, disclose the Neon `us-east-1` region and potential international processing, remove the unimplemented cross-device-sync claim from the policy, homepage, documentation, and login flow, and describe account/data-rights requests as a verified manual support process rather than a self-service feature.
 
 ### Site-wide discoverability
 
-The shared public-site footer must expose visible links to `/terms` and `/privacy` plus a visible `mailto:support@panghuli.tech` link. This footer content must be present on the home page and other public storefront pages so Waffo's crawler can discover it without starting from a legal page.
+The shared public-site footer must expose visible links to `/terms` and `/privacy` plus a visible `mailto:agent-store@panghuli.tech` link. This footer content must be present on the home page and other public storefront pages so Waffo's crawler can discover it without starting from a legal page.
 
 ### Regression checks
 
